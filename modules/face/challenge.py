@@ -16,23 +16,36 @@ from shared.contracts import SignalResult
 
 logger = logging.getLogger(__name__)
 
+NAMES_POOL = [
+    "Priya Sharma", "Aarav Patel", "Rohan Gupta", "Ananya Iyer",
+    "Vikram Singh", "Sneha Reddy", "Aditya Verma", "Meera Nair",
+    "Rajesh Kumar", "Kavita Rao", "Karan Malhotra", "Pooja Desai"
+]
+
+NONCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # 32 characters; excludes ambiguous 0, O, 1, I, L
+
+def generate_nonce(length: int = 5) -> str:
+    """Generate a speakable length-N uppercase alphanumeric nonce."""
+    return "".join(random.choices(NONCE_ALPHABET, k=length))
+
 @dataclass
 class Challenge:
     action: str           # "blink_twice" | "turn_left" | "turn_right"
-    nonce: str            # zero-padded 4-digit string
+    nonce: str            # 5-character mixed alphanumeric string (e.g. 'A7K2M')
     date_str: str         # ISO date string
-    expected_name: str    # from document OCR
+    expected_name: str    # from document OCR or randomly sampled from pool
 
     @property
     def spoken_phrase(self) -> str:
         return f"{self.expected_name} {self.date_str} {self.nonce}"
 
-def issue_challenge(ocr_name: str) -> Challenge:
+def issue_challenge(ocr_name: str = "") -> Challenge:
+    name = ocr_name.strip() if ocr_name and ocr_name.strip() and ocr_name.strip().lower() != "unknown" else random.choice(NAMES_POOL)
     return Challenge(
         action=random.choice(["blink_twice", "turn_left", "turn_right"]),
-        nonce=f"{random.randint(0, 9999):04d}",
+        nonce=generate_nonce(5),
         date_str=datetime.date.today().isoformat(),
-        expected_name=ocr_name,
+        expected_name=name,
     )
 
 def _decode_frames(video_path: str, max_frames: int = 30) -> list:

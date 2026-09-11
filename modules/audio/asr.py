@@ -117,11 +117,19 @@ def score_name_match(audio_path: str, ocr_name: str,
     raw_score = 1.0 - name_ratio
 
     # Anti-replay check
-    norm_nonce = _normalize_text(expected_nonce).strip()
+    norm_nonce = _normalize_text(expected_nonce).strip().lower()
+    spaced_nonce = " ".join(list(norm_nonce))
+    compact_trans = re.sub(r"\s+", "", norm_trans)
+    compact_nonce = re.sub(r"\s+", "", norm_nonce)
+
     norm_date = _normalize_text(expected_date).strip()
     clean_date = re.sub(r"\D", "", expected_date)
 
-    nonce_present = bool(norm_nonce and norm_nonce in norm_trans)
+    nonce_present = bool(
+        (norm_nonce and norm_nonce in norm_trans)
+        or (spaced_nonce and spaced_nonce in norm_trans)
+        or (compact_nonce and compact_nonce in compact_trans)
+    )
     date_present = bool(
         (norm_date and norm_date in norm_trans)
         or (clean_date and clean_date in re.sub(r"\D", "", norm_trans))

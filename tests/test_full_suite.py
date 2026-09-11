@@ -572,7 +572,7 @@ def test_asr_ok_true_on_silent():
 def test_challenge_issue_fields():
     ch = issue_challenge("Priya Sharma")
     assert ch.action in ("blink_twice", "turn_left", "turn_right")
-    assert len(ch.nonce) == 4 and ch.nonce.isdigit()
+    assert len(ch.nonce) == 5 and ch.nonce.isalnum()
     assert "Priya Sharma" in ch.spoken_phrase
     assert ch.nonce in ch.spoken_phrase
     assert len(ch.date_str) == 10

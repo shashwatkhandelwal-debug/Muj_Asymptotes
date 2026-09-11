@@ -420,11 +420,16 @@ async function startCaptureWorkflow() {
   await fetchChallenge();
 
   try {
-    // 1. getUserMedia (§5.2) — use ideal 30fps to match 50Hz/60Hz indoor AC lighting anti-flicker
-    activeStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-      audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
-    });
+    // 1. getUserMedia with resilient fallback
+    try {
+      activeStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+        audio: true
+      });
+    } catch (e1) {
+      console.warn("Primary getUserMedia failed, trying fallback:", e1);
+      activeStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    }
 
     renderUIState("checking_brightness", { lux: 0 });
     let video = document.getElementById("captureVideo");
@@ -554,8 +559,8 @@ async function runRecordingSequence() {
       }, tMs);
     });
 
-    // Countdown timer 5..0 (must run unconditionally)
-    let count = 5;
+    // Countdown timer 10..0 (must run unconditionally)
+    let count = 10;
     const countdownInterval = setInterval(() => {
       count -= 1;
       const countEl = document.getElementById("countdownNumber");

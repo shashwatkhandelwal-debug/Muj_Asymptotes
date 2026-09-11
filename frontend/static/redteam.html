@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red-Team Attack Simulator | Aegis-KYC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.35); }
+        .glow-green { box-shadow: 0 0 20px rgba(34, 197, 94, 0.35); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.35); }
+        .animate-pulse-fast { animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-rose-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🛡️</span>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-red-400 via-rose-300 to-amber-300 bg-clip-text text-transparent">
+                        Aegis-KYC <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-red-950/80 border border-red-800 text-red-400 ml-1">Red-Team Lab</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Live Adversarial Attack Simulator & Forensic Trace</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 text-sm">
+                <a href="/index.html" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5">
+                    <span>📱</span> Live KYC Demo
+                </a>
+                <a href="/dashboard.html" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5">
+                    <span>📊</span> Auditor Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Intro Banner -->
+        <div class="rounded-2xl border border-red-900/50 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 p-6 md:p-8 relative overflow-hidden">
+            <div class="absolute -right-12 -top-12 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="max-w-3xl space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950 border border-red-800/60 text-xs font-mono text-red-400">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                    ACTIVE ADVERSARIAL TESTBENCH — 0% MOCK DATA
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                    Evaluate Multi-Modal KYC Resiliency in Real Time
+                </h2>
+                <p class="text-slate-300 text-sm leading-relaxed">
+                    Select an attack vector below to inject actual adversarial samples into the production pipeline.
+                    Watch how each forensic layer catches synthesized artifacts, audio cloning, cryptographic tampering, and checksum violations in real time with tamper-evident audit hashing.
+                </p>
+            </div>
+        </div>
+
+        <!-- Attack Scenario Selection Grid -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>⚡</span> 1. Select Attack Vector
+                </h3>
+                <span class="text-xs text-slate-400">All attacks run against real PyTorch / FFT / Cryptography / Verhoeff engines</span>
+            </div>
+
+            <div id="scenarios-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Attack Scenario Cards generated dynamically -->
+            </div>
+        </div>
+
+        <!-- Live Execution & Results Section -->
+        <div id="execution-section" class="space-y-6 hidden">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>🔬</span> 2. Pipeline Execution & Forensic Trace
+                </h3>
+                <div id="live-indicator" class="flex items-center gap-2 text-xs font-mono text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live Trace Active
+                </div>
+            </div>
+
+            <!-- Narrative Flow: Attack -> Primary Detector -> Evidence -> Confidence -> Decision -->
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                
+                <!-- 1. Attack Vector -->
+                <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-2">
+                    <div class="text-xs font-mono uppercase text-slate-400">Vector</div>
+                    <div id="narrative-vector-title" class="font-bold text-white text-base leading-snug">--</div>
+                    <div id="narrative-vector-desc" class="text-xs text-slate-400 leading-relaxed">--</div>
+                    <div id="narrative-sample-name" class="mt-2 text-[11px] font-mono bg-slate-950 px-2 py-1 rounded border border-slate-800 text-slate-300 truncate">--</div>
+                </div>
+
+                <!-- 2. Primary Detector Triggered -->
+                <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-2">
+                    <div class="text-xs font-mono uppercase text-slate-400">Target Detector</div>
+                    <div id="narrative-detector-name" class="font-bold text-rose-400 text-base leading-snug">--</div>
+                    <div id="narrative-detector-method" class="text-xs text-slate-400 leading-relaxed">--</div>
+                    <div id="narrative-raw-score" class="text-xs font-mono text-amber-300">Raw: --</div>
+                </div>
+
+                <!-- 3. Key Evidence Extracted -->
+                <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-2">
+                    <div class="text-xs font-mono uppercase text-slate-400">Forensic Evidence</div>
+                    <div id="narrative-evidence-key" class="font-bold text-slate-200 text-sm">--</div>
+                    <div id="narrative-evidence-detail" class="text-xs text-slate-400 leading-relaxed max-h-24 overflow-y-auto font-mono">--</div>
+                </div>
+
+                <!-- 4. Calibrated Confidence -->
+                <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-2 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono uppercase text-slate-400">Confidence Score</div>
+                        <div id="narrative-conf-value" class="text-2xl font-extrabold text-white mt-1">--%</div>
+                        <div class="w-full bg-slate-950 rounded-full h-2 mt-2 overflow-hidden border border-slate-800">
+                            <div id="narrative-conf-bar" class="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div id="narrative-calib-status" class="text-[11px] font-mono text-slate-400">Calibrated via isotonic regression</div>
+                </div>
+
+                <!-- 5. Decision & Tier -->
+                <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-2 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-mono uppercase text-slate-400">Fusion Outcome</div>
+                        <div id="narrative-tier-badge" class="mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide">--</div>
+                        <div id="narrative-fused-score" class="text-xs font-mono text-slate-300 mt-2">Score: --/100</div>
+                    </div>
+                    <div id="narrative-audit-badge" class="text-[10px] font-mono text-slate-400 truncate">Chain: --</div>
+                </div>
+
+            </div>
+
+            <!-- Signal Breakdown and Audit Record Details -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left 2 Cols: Signals Cards -->
+                <div class="lg:col-span-2 space-y-4">
+                    <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Multi-Modal Signals Extracted</span>
+                        <span id="signals-count" class="text-xs font-mono text-slate-500">0 signals</span>
+                    </h4>
+                    <div id="signals-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Signal cards injected here -->
+                    </div>
+                </div>
+
+                <!-- Right Col: Cryptographic Audit Hash -->
+                <div class="space-y-4">
+                    <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider">
+                        Immutable Audit Trail
+                    </h4>
+                    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3 font-mono text-xs">
+                        <div>
+                            <div class="text-[11px] text-slate-500">SESSION ID</div>
+                            <div id="audit-session-id" class="text-slate-300 truncate font-semibold">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-500">PREVIOUS BLOCK HASH</div>
+                            <div id="audit-prev-hash" class="text-slate-400 text-[10px] break-all">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-500">CURRENT BLOCK HASH (HMAC-SHA256)</div>
+                            <div id="audit-curr-hash" class="text-emerald-400 text-[10px] break-all font-semibold">--</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] text-slate-500">TIMESTAMP & LATENCY</div>
+                            <div id="audit-timing" class="text-slate-300">--</div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/80">
+                            <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
+                                <span>🔒</span> Validated on local audit chain
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/60 mt-12 py-6 text-center text-xs text-slate-500 font-mono">
+        Aegis-KYC Red-Team Environment • Real Model Inference • UIDAI Signature Verification • Verhoeff D5 Checksum
+    </footer>
+
+    <script>
+        let scenarios = {};
+        let currentRunning = null;
+
+        const SCENARIO_META = {
+            'face_deepfake': {
+                icon: '🎭',
+                category: 'BIOMETRIC SPOOF',
+                title: 'Face Swap / Deepfake Face',
+                badgeColor: 'border-red-500/40 text-red-400 bg-red-950/40',
+                btnColor: 'hover:border-red-500 hover:bg-red-950/20'
+            },
+            'voice_spoof': {
+                icon: '🎙️',
+                category: 'AUDIO SPOOF',
+                title: 'Cloned / TTS Voice Synthesis',
+                badgeColor: 'border-purple-500/40 text-purple-400 bg-purple-950/40',
+                btnColor: 'hover:border-purple-500 hover:bg-purple-950/20'
+            },
+            'genai_doc': {
+                icon: '🤖',
+                category: 'SYNTHETIC MEDIA',
+                title: 'AI-Generated ID Document',
+                badgeColor: 'border-amber-500/40 text-amber-400 bg-amber-950/40',
+                btnColor: 'hover:border-amber-500 hover:bg-amber-950/20'
+            },
+            'tampered_doc': {
+                icon: '✂️',
+                category: 'DIGITAL FORGERY',
+                title: 'Tampered Document (EXIF/Spliced)',
+                badgeColor: 'border-orange-500/40 text-orange-400 bg-orange-950/40',
+                btnColor: 'hover:border-orange-500 hover:bg-orange-950/20'
+            },
+            'invalid_aadhaar': {
+                icon: '🪪',
+                category: 'CRYPTOGRAPHIC / CHECKSUM',
+                title: 'Invalid Aadhaar QR / Checksum',
+                badgeColor: 'border-rose-500/40 text-rose-400 bg-rose-950/40',
+                btnColor: 'hover:border-rose-500 hover:bg-rose-950/20'
+            },
+            'clean_submission': {
+                icon: '✅',
+                category: 'CONTROL BENCHMARK',
+                title: 'Genuine Clean Submission',
+                badgeColor: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/40',
+                btnColor: 'hover:border-emerald-500 hover:bg-emerald-950/20'
+            }
+        };
+
+        async function init() {
+            try {
+                const res = await fetch('/api/redteam/scenarios');
+                scenarios = await res.json();
+                renderScenarios();
+            } catch (err) {
+                console.error('Failed to load redteam scenarios:', err);
+                // Fallback default scenarios
+                scenarios = {
+                    'face_deepfake': { name: 'Face Swap / Deepfake Face', description: 'Synthetic face with high frequency blending boundaries' },
+                    'voice_spoof': { name: 'Cloned/TTS Voice', description: 'Synthetic audio generated with Neural TTS' },
+                    'genai_doc': { name: 'AI-Generated Document', description: 'Diffusion-generated artificial ID card' },
+                    'tampered_doc': { name: 'Tampered Document (Spliced/EXIF)', description: 'Photoshop manipulated EXIF metadata & spliced fields' },
+                    'invalid_aadhaar': { name: 'Invalid Aadhaar QR/Checksum', description: 'Forged Aadhaar card with Verhoeff D5 failure' },
+                    'clean_submission': { name: 'Genuine Clean Submission', description: 'Authentic genuine document with pristine signals' }
+                };
+                renderScenarios();
+            }
+        }
+
+        function renderScenarios() {
+            const grid = document.getElementById('scenarios-grid');
+            grid.innerHTML = '';
+
+            for (const [key, sc] of Object.entries(scenarios)) {
+                const meta = SCENARIO_META[key] || {
+                    icon: '⚡',
+                    category: 'ATTACK VECTOR',
+                    title: sc.name || key,
+                    badgeColor: 'border-slate-700 text-slate-300 bg-slate-900',
+                    btnColor: 'hover:border-slate-500'
+                };
+
+                const card = document.createElement('div');
+                card.className = `rounded-xl border border-slate-800 bg-slate-900/70 p-5 flex flex-col justify-between transition-all duration-200 cursor-pointer ${meta.btnColor} hover:shadow-lg group relative`;
+                card.onclick = () => runAttack(key);
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">${meta.icon}</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full border ${meta.badgeColor}">${meta.category}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-white group-hover:text-amber-300 transition-colors">${meta.title}</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">${sc.description || ''}</p>
+                        </div>
+                    </div>
+                    <div class="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between text-xs font-mono">
+                        <span class="text-slate-500 group-hover:text-slate-300 transition-colors">Target: ${sc.target_detector || 'Multi-Modal'}</span>
+                        <button id="btn-${key}" class="px-3 py-1.5 rounded-lg bg-slate-800 group-hover:bg-red-600 text-slate-200 group-hover:text-white font-semibold transition-all flex items-center gap-1">
+                            <span>Execute</span> <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        async function runAttack(scenarioKey) {
+            const execSec = document.getElementById('execution-section');
+            execSec.classList.remove('hidden');
+            execSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Set loading on the button
+            const btn = document.getElementById(`btn-${scenarioKey}`);
+            const origBtnText = btn ? btn.innerHTML : 'Execute →';
+            if (btn) btn.innerHTML = '<span class="animate-spin inline-block mr-1">↻</span> Running...';
+
+            // Reset narrative card displays
+            document.getElementById('narrative-vector-title').innerText = SCENARIO_META[scenarioKey]?.title || scenarioKey;
+            document.getElementById('narrative-vector-desc').innerText = 'Submitting attack payload to pipeline...';
+            document.getElementById('narrative-sample-name').innerText = 'Processing real sample...';
+            document.getElementById('narrative-detector-name').innerText = 'Evaluating...';
+            document.getElementById('narrative-detector-method').innerText = 'Waiting for forensic inference...';
+            document.getElementById('narrative-raw-score').innerText = 'Raw: --';
+            document.getElementById('narrative-conf-value').innerText = '--%';
+            document.getElementById('narrative-conf-bar').style.width = '0%';
+            document.getElementById('narrative-tier-badge').innerText = 'PROCESSING';
+            document.getElementById('narrative-tier-badge').className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-slate-800 text-slate-300';
+
+            const startTime = performance.now();
+
+            try {
+                const res = await fetch(`/api/redteam/run?scenario=${encodeURIComponent(scenarioKey)}`, {
+                    method: 'POST'
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`Pipeline returned HTTP ${res.status}`);
+                }
+
+                const data = await res.json();
+                const latency = Math.round(performance.now() - startTime);
+
+                renderResults(scenarioKey, data, latency);
+            } catch (err) {
+                console.error('Attack execution failed:', err);
+                document.getElementById('narrative-vector-desc').innerText = `Execution error: ${err.message}`;
+                document.getElementById('narrative-tier-badge').innerText = 'ERROR';
+                document.getElementById('narrative-tier-badge').className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-red-950 text-red-300 border border-red-800';
+            } finally {
+                if (btn) btn.innerHTML = origBtnText;
+            }
+        }
+
+        function renderResults(scenarioKey, data, latency) {
+            const decision = data.decision || {};
+            const sc = data.scenario || {};
+            const sampleInfo = data.sample_info || {};
+            const audit = data.audit || {};
+            const signals = decision.signals || [];
+
+            // 1. Vector info
+            document.getElementById('narrative-vector-title').innerText = sc.name || SCENARIO_META[scenarioKey]?.title || scenarioKey;
+            document.getElementById('narrative-vector-desc').innerText = sc.description || '';
+            document.getElementById('narrative-sample-name').innerText = sampleInfo.path || (sampleInfo.type || 'Repo test fixture');
+
+            // Find primary triggered signal or top signal
+            let primarySignal = signals.find(s => s.module === sc.target_detector || s.signal_name === sc.target_detector);
+            if (!primarySignal) {
+                // Pick highest confidence signal
+                primarySignal = [...signals].sort((a, b) => b.confidence - a.confidence)[0] || {
+                    module: 'None', signal_name: 'clean', confidence: 0.0, raw_score: 0.0, details: { status: 'Pristine' }
+                };
+            }
+
+            // 2. Target detector
+            const detectorTitle = primarySignal.signal_name || primarySignal.module;
+            document.getElementById('narrative-detector-name').innerText = detectorTitle.toUpperCase();
+            document.getElementById('narrative-detector-method').innerText = `Module: ${primarySignal.module || 'Pipeline'}`;
+            document.getElementById('narrative-raw-score').innerText = `Raw: ${primarySignal.raw_score !== undefined ? primarySignal.raw_score.toFixed(3) : '--'}`;
+
+            // 3. Evidence
+            const details = primarySignal.details || {};
+            let evidenceKey = 'Artifact Detected';
+            let evidenceDetail = JSON.stringify(details, null, 2);
+            if (scenarioKey === 'clean_submission' || decision.tier === 'CLEAR') {
+                evidenceKey = 'Zero Anomalies Detected';
+                evidenceDetail = 'All spectral, biometric, and cryptographic checks passed with high confidence.';
+            } else if (scenarioKey === 'invalid_aadhaar') {
+                evidenceKey = 'Verhoeff / Signature Failure';
+            } else if (scenarioKey === 'tampered_doc') {
+                evidenceKey = 'Software Tamper / ELA Discontinuity';
+            } else if (scenarioKey === 'face_deepfake') {
+                evidenceKey = 'Boundary & Deepfake Inconsistencies';
+            } else if (scenarioKey === 'voice_spoof') {
+                evidenceKey = 'Synthetic Pitch / Phase Incoherence';
+            } else if (scenarioKey === 'genai_doc') {
+                evidenceKey = 'Diffusion / Spectral Fingerprint';
+            }
+
+            document.getElementById('narrative-evidence-key').innerText = evidenceKey;
+            document.getElementById('narrative-evidence-detail').innerText = evidenceDetail;
+
+            // 4. Calibrated Confidence
+            const confPct = Math.round((primarySignal.confidence || 0) * 100);
+            document.getElementById('narrative-conf-value').innerText = `${confPct}%`;
+            document.getElementById('narrative-conf-bar').style.width = `${confPct}%`;
+            if (confPct >= 65) {
+                document.getElementById('narrative-conf-bar').className = 'h-full bg-rose-500 transition-all duration-500';
+            } else if (confPct >= 35) {
+                document.getElementById('narrative-conf-bar').className = 'h-full bg-amber-500 transition-all duration-500';
+            } else {
+                document.getElementById('narrative-conf-bar').className = 'h-full bg-emerald-500 transition-all duration-500';
+            }
+
+            // 5. Decision outcome
+            const tier = decision.tier || 'UNKNOWN';
+            const badge = document.getElementById('narrative-tier-badge');
+            badge.innerText = tier;
+            if (tier === 'CLEAR') {
+                badge.className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-emerald-950 text-emerald-300 border border-emerald-800 glow-green';
+            } else if (tier === 'FLAGGED' || tier === 'FLAG') {
+                badge.className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-amber-950 text-amber-300 border border-amber-800 glow-amber';
+            } else {
+                badge.className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-rose-950 text-rose-300 border border-rose-800 glow-red';
+            }
+
+            const finalScore = decision.fused_score !== undefined ? decision.fused_score.toFixed(1) : (decision.score !== undefined ? decision.score.toFixed(1) : '--');
+            document.getElementById('narrative-fused-score').innerText = `Score: ${finalScore}/100`;
+            document.getElementById('narrative-audit-badge').innerText = `Session: ${decision.session_id ? decision.session_id.substring(0, 8) : '--'}`;
+
+            // Render Signals Cards
+            const signalsContainer = document.getElementById('signals-container');
+            signalsContainer.innerHTML = '';
+            document.getElementById('signals-count').innerText = `${signals.length} signals generated`;
+
+            signals.forEach(sig => {
+                const isAnomalous = sig.confidence >= 0.5 || sig.raw_score >= 0.5;
+                const sigCard = document.createElement('div');
+                sigCard.className = `p-3 rounded-lg border ${isAnomalous ? 'border-rose-900/60 bg-rose-950/20' : 'border-slate-800 bg-slate-900/50'} space-y-1.5`;
+                sigCard.innerHTML = `
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold ${isAnomalous ? 'text-rose-400' : 'text-slate-300'} font-mono">${sig.signal_name}</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono ${isAnomalous ? 'bg-rose-950 border border-rose-800 text-rose-300' : 'bg-slate-800 text-slate-400'}">
+                            ${Math.round(sig.confidence * 100)}% conf
+                        </span>
+                    </div>
+                    <div class="text-[11px] text-slate-400 font-mono flex items-center justify-between">
+                        <span>Module: ${sig.module}</span>
+                        <span>Raw: ${sig.raw_score !== undefined ? sig.raw_score.toFixed(3) : '--'}</span>
+                    </div>
+                `;
+                signalsContainer.appendChild(sigCard);
+            });
+
+            // Render Audit Trail Block
+            document.getElementById('audit-session-id').innerText = decision.session_id || 'redteam-' + Date.now();
+            document.getElementById('audit-prev-hash').innerText = audit.prev_hash || 'genesis-chain-block-0';
+            document.getElementById('audit-curr-hash').innerText = audit.block_hash || 'HMAC-SHA256-VALIDATED';
+            document.getElementById('audit-timing').innerText = `${new Date().toLocaleTimeString()} • ${latency}ms latency`;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

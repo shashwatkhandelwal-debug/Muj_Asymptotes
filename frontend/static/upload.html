@@ -504,6 +504,96 @@
       font-size: 11px;
       font-family: var(--font-mono);
     }
+  
+    /* Mobile-specific responsive adjustments (<= 640px) */
+    .mobile-stepper-pill {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      background: var(--accent-dim);
+      border: 1px solid rgba(56,189,248,0.3);
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .error-banner {
+      display: none;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 6px;
+      color: var(--text-primary);
+    }
+
+    .upload-toast {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(245,158,11,0.14);
+      border: 1px solid rgba(245,158,11,0.4);
+      border-radius: 6px;
+      color: var(--review);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        padding: 0 12px;
+        height: auto;
+        min-height: 54px;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .header-title {
+        font-size: 11px;
+      }
+      .stepper-nav {
+        display: none !important;
+      }
+      .mobile-stepper-pill {
+        display: inline-flex !important;
+      }
+      main {
+        padding: 12px 8px;
+      }
+      .panel {
+        padding: 16px 12px;
+      }
+      .dual-dropzone-grid {
+        grid-template-columns: 1fr !important;
+      }
+      .cam-actions-bar {
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .cam-actions-bar button {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+      .captured-thumb-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+      .captured-thumb-imgs {
+        justify-content: center !important;
+      }
+      .preset-buttons-row {
+        flex-wrap: wrap !important;
+      }
+      .preset-buttons-row button {
+        flex: 1 1 calc(50% - 6px) !important;
+        font-size: 10px !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -544,6 +634,9 @@
 
     <!-- Quick action cluster -->
     <div style="display: flex; align-items: center; gap: 8px;">
+      <a href="/redteam.html" class="btn-terminal" style="font-size: 11px; padding: 5px 10px; color: #f87171; border-color: rgba(239,68,68,0.4); text-decoration: none; display: inline-flex; align-items: center;">
+        <span>[🔴 RED-TEAM LAB]</span>
+      </a>
       <button class="btn-terminal" id="btnRestartFlow" onclick="restartFlow()" style="font-size: 11px; padding: 5px 10px;">
         <span>[RESTART FLOW]</span>
       </button>
@@ -595,6 +688,7 @@
           <!-- =================================================== -->
           <!-- OPTION A: LIVE CAMERA 2-PHOTO SEQUENTIAL CAPTURE -->
           <!-- =================================================== -->
+          <div id="docCamErrorBanner" class="error-banner"></div>
           <div id="docCameraSection">
             <!-- Dynamic Prompt Banner -->
             <div style="background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
@@ -628,7 +722,7 @@
             </div>
 
             <!-- Capture Actions Bar -->
-            <div id="camControlButtons" style="display: flex; justify-content: space-between; align-items: center;">
+            <div id="camControlButtons" class="cam-actions-bar" style="display: flex; justify-content: space-between; align-items: center;">
               <button class="btn-terminal" style="font-size: 11px;" onclick="resetCameraTwoPhoto()">
                 <span>[RESTART CAPTURE]</span>
               </button>
@@ -643,7 +737,7 @@
             <!-- Two-Photo Thumbnail Bar -->
             <div id="capturedThumbnails" style="display: none; margin-top: 16px; background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; padding: 12px 14px;">
               <div class="eyebrow" style="margin-bottom: 8px;">CAPTURED DUAL-PHOTO ASSETS:</div>
-              <div style="display: flex; gap: 14px; align-items: center;">
+              <div class="captured-thumb-row" style="display: flex; gap: 14px; align-items: center;">
                 <div style="width: 140px; height: 90px; background: #000; border: 1px solid var(--border-hairline); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                   <img id="thumbPhoto1" style="max-width: 100%; max-height: 100%; object-fit: contain;">
                 </div>
@@ -666,11 +760,11 @@
           <!-- OPTION B: FILE UPLOAD (FALLBACK & PRESETS) -->
           <!-- =================================================== -->
           <div id="docUploadSection" style="display: none;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div class="dual-dropzone-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
               
               <!-- Slot 1: Full Card -->
               <div class="upload-zone" id="dropzoneFull">
-                <input type="file" id="fileInputFull" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
+                <input type="file" id="fileInputFull" accept="image/*" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
                 <div style="font-size: 24px; color: var(--accent-blue); margin-bottom: 4px;">📄</div>
                 <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">1. Full Aadhaar Card</div>
                 <div id="fullFileName" class="mono" style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">Click or Drag image</div>
@@ -678,7 +772,7 @@
 
               <!-- Slot 2: Dedicated QR Code Close-up -->
               <div class="upload-zone" id="dropzoneQR">
-                <input type="file" id="fileInputQR" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
+                <input type="file" id="fileInputQR" accept="image/*" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
                 <div style="font-size: 24px; color: var(--accent-teal); margin-bottom: 4px;">🔲</div>
                 <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">2. QR Code Close-up</div>
                 <div id="qrFileName" class="mono" style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">Dedicated high-res QR (Optional)</div>
@@ -687,7 +781,7 @@
             </div>
 
             <!-- Quick Test Samples -->
-            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px;">
+            <div class="preset-buttons-row" style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px;">
               <span class="eyebrow" style="font-size: 10px;">PRESET SAMPLES:</span>
               <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDual('clean')">Clean Aadhaar + QR</button>
               <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDual('tampered')">Spliced / Tampered Doc</button>
@@ -700,6 +794,7 @@
           </div>
 
           <!-- In-flight Processing Banner -->
+          <div id="docUploadAlert" class="upload-toast"></div>
           <div id="docProcessingState" style="display: none; margin-top: 20px; padding: 20px; background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; text-align: center;">
             <div class="spinner" style="margin-bottom: 10px;"></div>
             <div class="mono" style="font-size: 13px; color: var(--accent-blue); font-weight: 600;">EXECUTING MULTI-LAYER DOCUMENT FORENSICS...</div>
@@ -1118,6 +1213,32 @@
   <script>
     // Global Flow State
     let currentStage = 1;
+
+    function showCameraError(bannerId, err) {
+      const banner = document.getElementById(bannerId);
+      if (banner) {
+        banner.style.display = "block";
+        const errName = err ? (err.name || "CameraError") : "CameraError";
+        const errMsg = err ? (err.message || "Failed to acquire camera stream.") : "Failed to acquire camera stream.";
+        banner.innerHTML = `
+          <div style="font-weight: 700; color: var(--flagged); margin-bottom: 4px;">⚠️ CAMERA ACCESS FAILED: ${errName}</div>
+          <div style="font-size: 11px; color: var(--text-secondary); line-height: 1.4;">${errMsg}</div>
+          <div style="font-size: 10px; color: var(--text-tertiary); margin-top: 6px;">Please allow camera permissions in your browser bar and ensure you are accessing via a secure (HTTPS) origin.</div>
+        `;
+      }
+    }
+
+    function showUploadToast(msg) {
+      const el = document.getElementById("docUploadAlert");
+      if (el) {
+        el.style.display = "block";
+        el.innerText = msg;
+        setTimeout(() => { el.style.display = "none"; }, 4000);
+      } else {
+        alert(msg);
+      }
+    }
+
     let selectedDocFile = null;
     let docVerificationResult = null;
     let activeChallenge = {
@@ -1343,19 +1464,33 @@
         document.getElementById("faceActionPrompt").innerText = `Action: ${actionLabels[activeChallenge.action] || activeChallenge.action.toUpperCase()}`;
 
         if (!mediaStream) {
-          mediaStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-            audio: { sampleRate: 16000, channelCount: 1 }
-          });
+          try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: "user", width: { ideal: 854 }, height: { ideal: 480 } },
+              audio: true
+            });
+          } catch (err1) {
+            console.warn("Primary biometric getUserMedia failed, trying standard fallback:", err1);
+            try {
+              mediaStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+              });
+            } catch (err2) {
+              console.warn("Audio+Video fallback failed, trying video-only fallback:", err2);
+              mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
+          }
         }
         const video = document.getElementById("captureVideo");
-        video.srcObject = mediaStream;
-        await video.play();
-
-        // Start lux polling
-        pollLux(video);
+        if (video && mediaStream) {
+          video.srcObject = mediaStream;
+          await video.play();
+          pollLux(video);
+        }
       } catch (err) {
-        console.warn("Camera setup error:", err);
+        console.error("Biometric camera setup fatal error:", err);
+        showCameraError("biometricCamErrorBanner", err);
       }
     }
 
@@ -1430,8 +1565,20 @@
     async function startAudioCaptureWorkflow() {
       document.getElementById("btnStartVoiceRecord").disabled = true;
       document.getElementById("audioRecDot").style.display = "inline-flex";
-      document.getElementById("audioStatusText").innerText = "RECORDING (3 SECONDS)...";
       recordedAudioChunks = [];
+
+      let secondsLeft = 10;
+      const statusText = document.getElementById("audioStatusText");
+      statusText.innerText = `RECORDING (${secondsLeft}s): RECITE PHRASE NOW`;
+
+      const countdownTimer = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft > 0) {
+          statusText.innerText = `RECORDING (${secondsLeft}s): RECITE PHRASE NOW`;
+        } else {
+          clearInterval(countdownTimer);
+        }
+      }, 1000);
 
       try {
         const audioTracks = mediaStream ? mediaStream.getAudioTracks() : [];
@@ -1442,18 +1589,20 @@
         };
         mediaRecorder.start(200);
 
-        // Record for 3.5 seconds then stop and submit
+        // Record for 10 seconds to allow speaking the full name + 5-char nonce clearly
         setTimeout(async () => {
+          clearInterval(countdownTimer);
           if (mediaRecorder && mediaRecorder.state !== "inactive") {
             mediaRecorder.stop();
           }
           document.getElementById("audioRecDot").style.display = "none";
-          document.getElementById("audioStatusText").innerText = "PROCESSING PAYLOAD...";
+          document.getElementById("audioStatusText").innerText = "PROCESSING MULTI-MODAL PAYLOAD...";
           stopCameraTracks();
           await finalizeAndSubmitChallenge();
-        }, 3500);
+        }, 10000);
       } catch (err) {
-        console.warn("Audio capture error:", err);
+        clearInterval(countdownTimer);
+        console.error("Audio capture error:", err);
         stopCameraTracks();
         await finalizeAndSubmitChallenge();
       }
@@ -1736,20 +1885,31 @@
     let photo2Blob = null;
 
     async function initDocCamera() {
+      const banner = document.getElementById("docCamErrorBanner");
+      if (banner) banner.style.display = "none";
       try {
         if (!docCamStream) {
-          docCamStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-          });
+          try {
+            docCamStream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: false
+            });
+          } catch (err1) {
+            console.warn("Primary doc camera constraint failed, retrying fallback:", err1);
+            docCamStream = await navigator.mediaDevices.getUserMedia({
+              video: true,
+              audio: false
+            });
+          }
         }
         const v = document.getElementById("docCamVideo");
-        if (v) {
+        if (v && docCamStream) {
           v.srcObject = docCamStream;
           await v.play();
         }
       } catch (e) {
-        console.warn("Doc camera stream error:", e);
+        console.error("Doc camera stream fatal error:", e);
+        showCameraError("docCamErrorBanner", e);
       }
     }
 
@@ -1878,7 +2038,10 @@
     }
 
     async function submitDocVerify() {
-      if (!photo1Blob && !selectedDocFile) return;
+      if (!photo1Blob && !selectedDocFile) {
+        showUploadToast("⚠️ Please capture or select an Aadhaar card image before verifying.");
+        return;
+      }
       document.getElementById("docProcessingState").style.display = "block";
 
       const formData = new FormData();
