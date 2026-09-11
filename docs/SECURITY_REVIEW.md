@@ -1,6 +1,6 @@
 # Security Review: Decision Fusion, Audit Chain, and Tamper Resistance
 
-This document reviews the security architecture and implementation of the SIH-VAJRA HackMUJ 4.0 layer, focusing on decision fusion, anti-dilution floors, fail-open vs. fail-closed behaviors, Shamir-peppered audit chaining, and officer summary grounding.
+This document reviews the security architecture and implementation of the HackMUJ 4.0 detection layer, focusing on decision fusion, anti-dilution floors, fail-open vs. fail-closed behaviors, Shamir-peppered audit chaining, and officer summary grounding.
 
 ---
 

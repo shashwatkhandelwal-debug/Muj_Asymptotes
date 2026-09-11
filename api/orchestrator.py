@@ -1,6 +1,6 @@
 """
 api/orchestrator.py — FastAPI orchestrator.
-Existing SIH pipeline unchanged. New HackMUJ signals added below.
+Existing document pipeline unchanged. New HackMUJ signals added below.
 """
 import os
 import sys
@@ -37,7 +37,7 @@ _LAST_RESULT: dict = {}
 
 def run_existing_pipeline(doc_path: str) -> dict:
     """
-    Runs the existing SIH-VAJRA pipeline on doc_path.
+    Runs the existing document authentication pipeline on doc_path.
     Returns dict with 'ocr_name', 'score', and 'breakdown'.
     """
     try:

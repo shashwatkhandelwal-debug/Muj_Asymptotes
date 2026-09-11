@@ -22,8 +22,7 @@
 Detection. Theme: Cybersecurity & Defence.
 
 **What already exists and works:** A document-authentication and biometric core
-carried over from a prior Smart India Hackathon submission (SIH-VAJRA / SIH26188).
-Reuse has been explicitly confirmed as permitted by the HackMUJ organizing team.
+carried over from a prior competition submission, reuse confirmed as permitted by the HackMUJ organizing team.
 That core handles: multi-document OCR, UIDAI RSA-2048 signature verification,
 Verhoeff and ICAO MRZ checksums, cross-field consistency, ELA forensics, EXIF
 analysis, ArcFace 1:1 face matching, passive liveness, FAISS watchlist search,
@@ -244,7 +243,7 @@ Implement this structure:
 ```python
 """
 api/orchestrator.py — FastAPI orchestrator.
-Existing SIH pipeline unchanged. New HackMUJ signals added below.
+Existing document pipeline unchanged. New HackMUJ signals added below.
 """
 import asyncio, sqlite3, os
 from concurrent.futures import ThreadPoolExecutor
@@ -371,7 +370,7 @@ def test_response_shape():
 Run it. Must pass.
 
 ⏸ **INPUT NEEDED at this step:** The existing `run_existing_pipeline()` function
-lives in the original SIH codebase and I do not have its exact signature. Ask
+lives in the document authentication module. Ask
 Yash: "What is the exact function name and return shape of the existing verify
 pipeline, and which key holds the OCR-extracted name?" Do not guess this.
 
@@ -417,7 +416,7 @@ Replace the existing content with:
 Reuse of prior competition work has been explicitly confirmed as permitted by
 the HackMUJ 4.0 organizing team.
 
-## Carried forward (SIH-VAJRA / SIH26188)
+## Carried forward (prior competition submission)
 Multi-document OCR, UIDAI RSA-2048 signature verification, Verhoeff and ICAO MRZ
 checksums, cross-field consistency, ELA and EXIF forensics, ArcFace 1:1 biometric
 matching, passive liveness, FAISS watchlist search, deterministic risk scoring,

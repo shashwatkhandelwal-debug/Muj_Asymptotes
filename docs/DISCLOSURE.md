@@ -3,7 +3,7 @@
 Reuse of prior competition work has been explicitly confirmed as permitted by
 the HackMUJ 4.0 organizing team.
 
-## Carried forward (SIH-VAJRA / SIH26188)
+## Carried forward (prior competition submission)
 Multi-document OCR, UIDAI RSA-2048 signature verification, Verhoeff and ICAO MRZ
 checksums, cross-field consistency, ELA and EXIF forensics, ArcFace 1:1 biometric
 matching, passive liveness, FAISS watchlist search, deterministic risk scoring,

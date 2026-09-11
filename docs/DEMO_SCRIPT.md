@@ -7,7 +7,7 @@ This script is timed for a 90-second checkpoint presentation at HackMUJ 4.0. Fol
 ### [0:00 – 0:15] The Hook & The Problem
 
 **Say:**
-> "Generative AI and real-time deepfakes have broken traditional identity checkpoints because synthetic documents bypass ELA recompression checks, and injected face swaps easily fool static selfies. Our platform, SIH-VAJRA, combines cryptographically chained hardware-independent active challenges, multi-modal forensics, and mathematical anti-dilution risk scoring to detect synthetic identities on-device in under three seconds."
+> "Generative AI and real-time deepfakes have broken traditional identity checkpoints because synthetic documents bypass ELA recompression checks, and injected face swaps easily fool static selfies. Our platform, Asymptotes, combines cryptographically chained hardware-independent active challenges, multi-modal forensics, and mathematical anti-dilution risk scoring to detect synthetic identities on-device in under three seconds."
 
 ---
 
