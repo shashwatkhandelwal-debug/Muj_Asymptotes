@@ -1,0 +1,34 @@
+[
+  {
+    "scenario": "printed_photo_replay",
+    "triggered": false,
+    "raw_score": 0.4,
+    "expected_behaviour": "Detect lack of blinking (or uncertain fallback if face missing)",
+    "actual_behaviour": "Liveness action confirmed: blink_twice",
+    "passed": true
+  },
+  {
+    "scenario": "uniform_noise_image",
+    "triggered": true,
+    "raw_score": 1.0,
+    "expected_behaviour": "High frequency noise detected as synthetic/genai",
+    "actual_behaviour": "Document appears AI-generated",
+    "passed": true
+  },
+  {
+    "scenario": "silent_audio",
+    "triggered": true,
+    "raw_score": 0.9933071490757153,
+    "expected_behaviour": "Baseline score on silent input",
+    "actual_behaviour": "Synthetic/TTS voice detected",
+    "passed": true
+  },
+  {
+    "scenario": "mismatched_name",
+    "triggered": true,
+    "raw_score": 1.0,
+    "expected_behaviour": "Trigger mismatch flag due to empty spoken transcript",
+    "actual_behaviour": "MISMATCH: spoken name does not match document",
+    "passed": true
+  }
+]
