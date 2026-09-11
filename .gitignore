@@ -3,3 +3,8 @@ __pycache__/
 *$py.class
 *.log
 .pytest_cache/
+
+# Model weights
+models/*
+!models/README.md
+notebooks/*.ipynb_checkpoints
