@@ -628,3 +628,10 @@ if _static_dir.exists():
         return Response(status_code=204)
 
 
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("api.orchestrator:app", host="0.0.0.0", port=port)
+
+
+

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: biosecure-orchestrator
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DOWNLOAD_PRETRAINED
+        value: "0"
+      - key: PYTHONUNBUFFERED
+        value: "1"
