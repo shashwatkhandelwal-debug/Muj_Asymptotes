@@ -74,6 +74,60 @@ def _generate_heatmap(gray_img: np.ndarray, heatmap_path: str) -> None:
     fig.savefig(heatmap_path, bbox_inches="tight", dpi=100)
     plt.close(fig)
     return heatmap_vals.flatten().tolist()
+_PROBE_HEAD = None
+_PROBE_TRIED = False
+_CLIP_PROCESSOR = None
+_CLIP_MODEL = None
+_CLIP_TRIED = False
+
+def _load_probe_head():
+    global _PROBE_HEAD, _PROBE_TRIED
+    if _PROBE_TRIED:
+        return _PROBE_HEAD
+    _PROBE_TRIED = True
+    probe_path = Path("models/clip_genai_probe.pt")
+    if probe_path.exists():
+        try:
+            import torch
+            import torch.nn as nn
+            state = torch.load(str(probe_path), map_location="cpu")
+            head = nn.Linear(512, 1)
+            if isinstance(state, dict) and "state_dict" in state:
+                head.load_state_dict(state["state_dict"])
+            elif isinstance(state, dict):
+                head.load_state_dict(state)
+            head.eval()
+            _PROBE_HEAD = head
+            logger.info("Loaded custom CLIP probe head from %s", probe_path)
+        except Exception as e:
+            logger.warning("Failed to load clip_genai_probe.pt: %s", e)
+            _PROBE_HEAD = None
+    return _PROBE_HEAD
+
+def _load_clip_model():
+    global _CLIP_PROCESSOR, _CLIP_MODEL, _CLIP_TRIED
+    if _CLIP_TRIED:
+        return _CLIP_PROCESSOR, _CLIP_MODEL
+    _CLIP_TRIED = True
+    try:
+        from transformers import CLIPProcessor, CLIPModel
+        model_id = "openai/clip-vit-base-patch32"
+        allow_download = os.environ.get("DOWNLOAD_PRETRAINED", "0") == "1"
+        try:
+            _CLIP_PROCESSOR = CLIPProcessor.from_pretrained(model_id, local_files_only=True)
+            _CLIP_MODEL = CLIPModel.from_pretrained(model_id, local_files_only=True)
+        except Exception:
+            if allow_download:
+                _CLIP_PROCESSOR = CLIPProcessor.from_pretrained(model_id)
+                _CLIP_MODEL = CLIPModel.from_pretrained(model_id)
+            else:
+                _CLIP_PROCESSOR, _CLIP_MODEL = None, None
+        _CLIP_MODEL.eval()
+        logger.info("Loaded pre-trained CLIP model: %s", model_id)
+    except Exception as e:
+        logger.info("Pre-trained CLIP model not available locally or offline: %s", e)
+        _CLIP_PROCESSOR, _CLIP_MODEL = None, None
+    return _CLIP_PROCESSOR, _CLIP_MODEL
 
 def detect_genai_document(image_path: str) -> SignalResult:
     """
@@ -114,19 +168,42 @@ def detect_genai_document(image_path: str) -> SignalResult:
             gray_img = np.array(pil_img.convert("L"), dtype=np.float32)
 
         method = "fft_heuristic"
-        # Primary open_clip probe check
-        used_clip = False
-        try:
-            import open_clip
-            import torch
-            # If open_clip installed, check if weights/probe available
-            # If no probe weights file, fall through to FFT heuristic
-            used_clip = False
-        except Exception:
-            used_clip = False
-
         hf_ratio = _compute_patch_hf_ratio(gray_img)
         raw_score = float(min(1.0, max(0.0, hf_ratio * 2.0)))
+
+        # Tier 1: Check for custom-trained probe head
+        probe_head = _load_probe_head()
+        processor, clip_model = _load_clip_model()
+
+        if probe_head is not None and clip_model is not None and processor is not None:
+            try:
+                import torch
+                inputs = processor(images=pil_img, return_tensors="pt")
+                with torch.no_grad():
+                    image_features = clip_model.get_image_features(**inputs)
+                    image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+                    logit = probe_head(image_features.float())
+                    raw_score = float(torch.sigmoid(logit).item())
+                    method = "clip_linear_probe"
+            except Exception as e:
+                logger.debug("CLIP probe evaluation failed, falling back: %s", e)
+
+        # Tier 2: Zero-Shot Foundation CLIP (no training required!)
+        elif clip_model is not None and processor is not None:
+            try:
+                import torch
+                prompts = [
+                    "a photograph of an authentic real official national identity document card",
+                    "a synthetic artificial AI generated fake document with diffusion artifacts"
+                ]
+                inputs = processor(text=prompts, images=pil_img, return_tensors="pt", padding=True)
+                with torch.no_grad():
+                    outputs = clip_model(**inputs)
+                    probs = outputs.logits_per_image.softmax(dim=1)
+                    raw_score = float(probs[0, 1].item())
+                    method = "clip_zeroshot"
+            except Exception as e:
+                logger.debug("Zero-shot CLIP failed, falling back to FFT: %s", e)
 
         grid_scores = _generate_heatmap(gray_img, heatmap_path)
         spatial_variance = float(np.var(grid_scores))

@@ -62,28 +62,44 @@ def fit_calibrator(raw_scores: list[float], labels: list[int],
 
     return params
 
+DEFAULT_CALIBRATIONS = {
+    "genai_doc": {
+        "coef": 2.8560370368175634,
+        "intercept": -1.3985963503814183
+    },
+    "face_deepfake": {
+        "coef": 2.2086840874896145,
+        "intercept": -1.070977547025738
+    },
+    "voice_spoof": {
+        "coef": 2.551757487665282,
+        "intercept": -1.0159029252723972
+    }
+}
+
 def apply_calibration(raw_score: float, signal_name: str) -> float:
     """
     Load calibration.json. If signal_name has {"coef","intercept"}, apply sigmoid:
       z = coef * raw_score + intercept
       return 1 / (1 + exp(-z))
     If {"method": "threshold"}, apply the fixed-threshold rule.
-    If signal_name not in file, return raw_score unchanged (no calibration yet).
+    If signal_name not in file, check DEFAULT_CALIBRATIONS, else return raw_score.
     """
-    if not CALIBRATION_FILE.exists():
-        return float(raw_score)
-
-    try:
-        with open(CALIBRATION_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        logger.warning("Could not read calibration file: %s", e)
-        return float(raw_score)
+    data = {}
+    if CALIBRATION_FILE.exists():
+        try:
+            with open(CALIBRATION_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            logger.warning("Could not read calibration file: %s", e)
 
     if signal_name not in data:
-        return float(raw_score)
-
-    entry = data[signal_name]
+        if signal_name in DEFAULT_CALIBRATIONS:
+            entry = DEFAULT_CALIBRATIONS[signal_name]
+        else:
+            return float(raw_score)
+    else:
+        entry = data[signal_name]
     if "coef" in entry and "intercept" in entry:
         z = entry["coef"] * float(raw_score) + entry["intercept"]
         # Stable sigmoid

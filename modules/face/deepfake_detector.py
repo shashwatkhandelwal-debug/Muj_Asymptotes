@@ -17,6 +17,24 @@ logger = logging.getLogger(__name__)
 
 _HF_PIPELINE = None
 _HF_TRIED = False
+_ONNX_SESSION = None
+_ONNX_TRIED = False
+
+def _get_onnx_session():
+    global _ONNX_SESSION, _ONNX_TRIED
+    if _ONNX_TRIED:
+        return _ONNX_SESSION
+    _ONNX_TRIED = True
+    onnx_path = Path("models/deepfake.onnx")
+    if onnx_path.exists():
+        try:
+            import onnxruntime as ort
+            _ONNX_SESSION = ort.InferenceSession(str(onnx_path))
+            logger.info("Loaded ONNX deepfake model from %s", onnx_path)
+        except Exception as e:
+            logger.warning("Failed to load ONNX deepfake model: %s", e)
+            _ONNX_SESSION = None
+    return _ONNX_SESSION
 
 def _get_hf_pipeline():
     global _HF_PIPELINE, _HF_TRIED
@@ -25,12 +43,21 @@ def _get_hf_pipeline():
     _HF_TRIED = True
     try:
         from transformers import pipeline
-        # Attempt local cache load first to avoid network requests
-        _HF_PIPELINE = pipeline(
-            "image-classification",
-            model="dima806/deepfake_vs_real_image_detection",
-            local_files_only=True
-        )
+        allow_download = os.environ.get("DOWNLOAD_PRETRAINED", "0") == "1"
+        try:
+            _HF_PIPELINE = pipeline(
+                "image-classification",
+                model="dima806/deepfake_vs_real_image_detection",
+                local_files_only=True
+            )
+        except Exception:
+            if allow_download:
+                _HF_PIPELINE = pipeline(
+                    "image-classification",
+                    model="dima806/deepfake_vs_real_image_detection"
+                )
+            else:
+                _HF_PIPELINE = None
     except Exception as e:
         logger.info("HF deepfake model not found locally; using frequency fallback: %s", e)
         _HF_PIPELINE = None
@@ -47,6 +74,29 @@ def _laplacian_var(gray: np.ndarray) -> float:
         return float(np.var(dy) + np.var(dx))
 
 def _score_frame(frame: np.ndarray) -> float:
+    # 1. Primary: ONNX deepfake model if present
+    session = _get_onnx_session()
+    if session is not None:
+        try:
+            from PIL import Image
+            img = Image.fromarray(frame).resize((224, 224))
+            arr = np.array(img, dtype=np.float32) / 255.0
+            mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+            std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+            arr = (arr - mean) / std
+            inp = np.transpose(arr, (2, 0, 1))[np.newaxis, ...]
+            input_name = session.get_inputs()[0].name
+            outputs = session.run(None, {input_name: inp})
+            logits = outputs[0][0]
+            if len(logits) == 2:
+                prob_fake = float(np.exp(logits[1]) / np.sum(np.exp(logits)))
+            else:
+                prob_fake = float(1.0 / (1.0 + np.exp(-logits[0])))
+            return float(np.clip(prob_fake, 0.0, 1.0))
+        except Exception as e:
+            logger.debug("ONNX inference failed on frame, falling back: %s", e)
+
+    # 2. Secondary: HF pipeline if cached
     pipe = _get_hf_pipeline()
     if pipe is not None:
         try:
@@ -62,7 +112,7 @@ def _score_frame(frame: np.ndarray) -> float:
         except Exception as e:
             logger.debug("HF inference failed on frame, falling back to Laplacian: %s", e)
 
-    # Fallback: Frequency-domain texture classifier
+    # 3. Fallback: Frequency-domain texture classifier
     if frame.ndim == 3:
         # Convert RGB to grayscale (standard luminance weights)
         gray = 0.2989 * frame[:, :, 0] + 0.5870 * frame[:, :, 1] + 0.1140 * frame[:, :, 2]
