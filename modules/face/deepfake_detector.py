@@ -42,20 +42,16 @@ def _get_hf_pipeline():
         return _HF_PIPELINE
     _HF_TRIED = True
     try:
-        from transformers import pipeline
+        from transformers import pipeline, AutoModelForImageClassification, AutoImageProcessor
+        model_id = "dima806/deepfake_vs_real_image_detection"
         allow_download = os.environ.get("DOWNLOAD_PRETRAINED", "0") == "1"
         try:
-            _HF_PIPELINE = pipeline(
-                "image-classification",
-                model="dima806/deepfake_vs_real_image_detection",
-                local_files_only=True
-            )
+            model = AutoModelForImageClassification.from_pretrained(model_id, local_files_only=True)
+            proc = AutoImageProcessor.from_pretrained(model_id, local_files_only=True)
+            _HF_PIPELINE = pipeline("image-classification", model=model, image_processor=proc)
         except Exception:
             if allow_download:
-                _HF_PIPELINE = pipeline(
-                    "image-classification",
-                    model="dima806/deepfake_vs_real_image_detection"
-                )
+                _HF_PIPELINE = pipeline("image-classification", model=model_id)
             else:
                 _HF_PIPELINE = None
     except Exception as e:

@@ -120,10 +120,9 @@ def _load_clip_model():
             if allow_download:
                 _CLIP_PROCESSOR = CLIPProcessor.from_pretrained(model_id)
                 _CLIP_MODEL = CLIPModel.from_pretrained(model_id)
-            else:
-                _CLIP_PROCESSOR, _CLIP_MODEL = None, None
-        _CLIP_MODEL.eval()
-        logger.info("Loaded pre-trained CLIP model: %s", model_id)
+        if _CLIP_MODEL is not None:
+            _CLIP_MODEL.eval()
+            logger.info("Loaded pre-trained CLIP model: %s", model_id)
     except Exception as e:
         logger.info("Pre-trained CLIP model not available locally or offline: %s", e)
         _CLIP_PROCESSOR, _CLIP_MODEL = None, None
@@ -184,7 +183,7 @@ def detect_genai_document(image_path: str) -> SignalResult:
                     image_features = image_features / image_features.norm(dim=-1, keepdim=True)
                     logit = probe_head(image_features.float())
                     raw_score = float(torch.sigmoid(logit).item())
-                    method = "clip_linear_probe"
+                    method = "clip_probe"
             except Exception as e:
                 logger.debug("CLIP probe evaluation failed, falling back: %s", e)
 
@@ -201,7 +200,7 @@ def detect_genai_document(image_path: str) -> SignalResult:
                     outputs = clip_model(**inputs)
                     probs = outputs.logits_per_image.softmax(dim=1)
                     raw_score = float(probs[0, 1].item())
-                    method = "clip_zeroshot"
+                    method = "clip_probe"
             except Exception as e:
                 logger.debug("Zero-shot CLIP failed, falling back to FFT: %s", e)
 

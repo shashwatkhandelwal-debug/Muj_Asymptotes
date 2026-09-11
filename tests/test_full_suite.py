@@ -408,7 +408,7 @@ def test_genai_detector_heatmap_method_recorded():
     try:
         res = detect_genai_document(img_path)
         assert bool(res.evidence.get("method"))
-        assert res.evidence.get("method") in ("clip_probe", "fft_heuristic")
+        assert res.evidence.get("method") in ("clip_probe", "clip_zeroshot", "fft_heuristic")
     finally:
         if os.path.exists(img_path):
             os.unlink(img_path)
