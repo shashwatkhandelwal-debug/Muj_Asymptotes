@@ -15,12 +15,41 @@ let faceDetector = null;
 let mediaPipeLoaded = false;
 
 // Challenge Contract (§5.1)
-const challenge = {
+let challenge = {
   action: "turn_left",
   spoken_phrase: "Priya Sharma 2026-09-11 4471",
   nonce: "4471",
   date_str: "2026-09-11"
 };
+
+/**
+ * Fetch a fresh, single-use session challenge with a unique nonce from backend
+ */
+async function fetchChallenge() {
+  try {
+    const endpoints = ["/api/challenge/new", "http://localhost:8000/api/challenge/new", "/api/challenge"];
+    for (const ep of endpoints) {
+      try {
+        const res = await fetch(ep);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.nonce) {
+            challenge = {
+              action: data.action || challenge.action,
+              spoken_phrase: data.spoken_phrase || challenge.spoken_phrase,
+              nonce: data.nonce,
+              date_str: data.date_str || challenge.date_str
+            };
+            return challenge;
+          }
+        }
+      } catch (_) {}
+    }
+  } catch (e) {
+    console.warn("Using fallback challenge:", e);
+  }
+  return challenge;
+}
 
 /**
  * Initialize MediaPipe FaceDetection from window.FaceDetection CDN (§5.4)
@@ -98,7 +127,13 @@ async function extractFaceCrop(videoEl, canvas, ctx) {
           detectedBox = results.detections[0].boundingBox;
         }
       });
-      await faceDetector.send({ image: canvas });
+      // Ensure faceDetector.send cannot hang execution
+      await Promise.race([
+        faceDetector.send({ image: canvas }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("MediaPipe timeout")), 400))
+      ]).catch((err) => {
+        console.warn("Face detector send timeout or error:", err.message);
+      });
 
       if (detectedBox) {
         const bx = detectedBox.xCenter * w - (detectedBox.width * w) / 2;
@@ -153,7 +188,12 @@ async function sendChallenge(cropBlobs, audioBlob, ch) {
   formData.append("date_str", ch.date_str);
 
   try {
-    const res = await fetch("/api/challenge", { method: "POST", body: formData });
+    let res;
+    try {
+      res = await fetch("/api/challenge", { method: "POST", body: formData });
+    } catch (_) {
+      res = await fetch("http://localhost:8000/api/challenge", { method: "POST", body: formData });
+    }
     return await res.json();
   } catch (err) {
     // 404 or connection failure is expected when backend is offline
@@ -194,11 +234,17 @@ function renderUIState(state, data = {}) {
 
   switch (state) {
     case "idle":
+      const actionLabels = {
+        "turn_left": "Turn your head LEFT",
+        "turn_right": "Turn your head RIGHT",
+        "blink_twice": "Blink your eyes TWICE"
+      };
+      const displayAction = actionLabels[challenge.action] || challenge.action.replace("_", " ").toUpperCase();
       root.innerHTML = `
         <div class="panel" style="text-align: center;">
           <div class="eyebrow" style="margin-bottom: 12px;">ACTIVE BIOMETRIC CHALLENGE</div>
           <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
-            Action: Turn your head LEFT
+            Action: ${displayAction}
           </div>
           <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
             Position your face within frame, perform the action, and recite the challenge token aloud:
@@ -373,6 +419,7 @@ function renderUIState(state, data = {}) {
 async function startCaptureWorkflow() {
   overrideAvailable = false;
   dimWaitSeconds = 0;
+  await fetchChallenge();
 
   try {
     // 1. getUserMedia (§5.2) — use ideal 30fps to match 50Hz/60Hz indoor AC lighting anti-flicker
@@ -435,59 +482,96 @@ async function startCaptureWorkflow() {
  * Execute synchronized 5-second countdown, frame extraction, and audio recording
  */
 async function runRecordingSequence() {
-  renderUIState("recording", { count: 5 });
-
-  const video = document.getElementById("captureVideo");
-  const canvas = document.getElementById("calcCanvas");
-  if (video && activeStream && video.srcObject !== activeStream) {
-    video.srcObject = activeStream;
-    await video.play().catch(() => {});
-  }
-  const ctx = canvas.getContext("2d");
-
-  // Audio setup (§5.6)
-  audioChunks = [];
-  let mimeType = "audio/webm;codecs=opus";
-  if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = "audio/webm";
-  }
-
   try {
-    mediaRecorder = new MediaRecorder(activeStream, { mimeType });
-  } catch (e) {
-    mediaRecorder = new MediaRecorder(activeStream);
-  }
-  mediaRecorder.ondataavailable = (evt) => {
-    if (evt.data && evt.data.size > 0) audioChunks.push(evt.data);
-  };
-  mediaRecorder.start();
+    renderUIState("recording", { count: 5 });
 
-  // Five-keyframe sampling schedule (§5.5) at t = 0.5, 1.5, 2.5, 3.5, 4.5s
-  const keyframeTimesMs = [500, 1500, 2500, 3500, 4500];
-  const cropBlobs = [];
-
-  keyframeTimesMs.forEach((tMs) => {
-    setTimeout(async () => {
-      if (!activeStream || !video) return;
-      const crop = await extractFaceCrop(video, canvas, ctx);
-      if (crop && cropBlobs.length < 5) {
-        cropBlobs.push(crop);
-      }
-    }, tMs);
-  });
-
-  // Countdown timer 5..0
-  let count = 5;
-  const countdownInterval = setInterval(() => {
-    count -= 1;
-    const countEl = document.getElementById("countdownNumber");
-    if (countEl) countEl.innerText = count;
-
-    if (count <= 0) {
-      clearInterval(countdownInterval);
-      finalizeAndDispatch(cropBlobs);
+    const video = document.getElementById("captureVideo");
+    let canvas = document.getElementById("calcCanvas");
+    if (!canvas) {
+      canvas = document.createElement("canvas");
     }
-  }, 1000);
+    const ctx = canvas.getContext("2d");
+
+    if (video && activeStream) {
+      if (video.srcObject !== activeStream) {
+        video.srcObject = activeStream;
+      }
+      try {
+        video.play().catch(() => {});
+      } catch (_) {}
+    }
+
+    // Audio setup (§5.6) - isolate audio tracks to avoid recorder container negotiation failure
+    audioChunks = [];
+    try {
+      const audioTracks = activeStream ? activeStream.getAudioTracks() : [];
+      const audioStream = audioTracks.length > 0 ? new MediaStream(audioTracks) : activeStream;
+
+      let mimeType = "";
+      if (window.MediaRecorder) {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+          mimeType = "audio/webm";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          mimeType = "audio/mp4";
+        }
+
+        try {
+          mediaRecorder = mimeType ? new MediaRecorder(audioStream, { mimeType }) : new MediaRecorder(audioStream);
+        } catch (mErr) {
+          console.warn("Primary MediaRecorder init failed, trying bare fallback:", mErr);
+          mediaRecorder = new MediaRecorder(activeStream);
+        }
+
+        mediaRecorder.ondataavailable = (evt) => {
+          if (evt.data && evt.data.size > 0) audioChunks.push(evt.data);
+        };
+        mediaRecorder.start(250); // timeslice generates periodic chunks
+      }
+    } catch (e) {
+      console.warn("MediaRecorder could not start audio capture:", e);
+    }
+
+    // Five-keyframe sampling schedule (§5.5) at t = 0.5, 1.5, 2.5, 3.5, 4.5s
+    const keyframeTimesMs = [500, 1500, 2500, 3500, 4500];
+    const cropBlobs = [];
+
+    keyframeTimesMs.forEach((tMs) => {
+      setTimeout(async () => {
+        try {
+          if (!activeStream) return;
+          const liveVideo = document.getElementById("captureVideo") || video;
+          const liveCanvas = document.getElementById("calcCanvas") || canvas;
+          const liveCtx = liveCanvas.getContext ? liveCanvas.getContext("2d") : ctx;
+          if (!liveVideo || !liveCanvas || !liveCtx) return;
+
+          const crop = await extractFaceCrop(liveVideo, liveCanvas, liveCtx);
+          if (crop && cropBlobs.length < 5) {
+            cropBlobs.push(crop);
+          }
+        } catch (cropErr) {
+          console.warn("Keyframe crop frame failed, continuing:", cropErr);
+        }
+      }, tMs);
+    });
+
+    // Countdown timer 5..0 (must run unconditionally)
+    let count = 5;
+    const countdownInterval = setInterval(() => {
+      count -= 1;
+      const countEl = document.getElementById("countdownNumber");
+      if (countEl) countEl.innerText = count;
+
+      if (count <= 0) {
+        clearInterval(countdownInterval);
+        finalizeAndDispatch(cropBlobs);
+      }
+    }, 1000);
+  } catch (fatalErr) {
+    console.error("Fatal recording sequence error:", fatalErr);
+    renderUIState("error", { message: "Capture sequence error: " + fatalErr.message });
+  }
 }
 
 /**
@@ -528,6 +612,7 @@ async function finalizeAndDispatch(cropBlobs) {
 // Global initialization
 window.addEventListener("DOMContentLoaded", async () => {
   await initMediaPipe();
+  await fetchChallenge();
   renderUIState("idle");
 });
 

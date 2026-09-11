@@ -384,6 +384,22 @@ async def verify(document_image: UploadFile = File(...),
 async def last_result():
     return _LAST_RESULT or {"error": "no verification run yet"}
 
+@app.get("/api/challenge/new")
+@app.get("/api/challenge")
+async def get_new_challenge(name: str = "Priya Sharma"):
+    """
+    Issue a dynamic single-use session challenge with a cryptographically fresh nonce.
+    """
+    ch = issue_challenge(name)
+    return {
+        "ok": True,
+        "action": ch.action,
+        "nonce": ch.nonce,
+        "date_str": ch.date_str,
+        "expected_name": ch.expected_name,
+        "spoken_phrase": ch.spoken_phrase,
+    }
+
 @app.post("/api/challenge")
 async def handle_challenge(request: Request):
     global _PEPPER
