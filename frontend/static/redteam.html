@@ -16,10 +16,10 @@
         @keyframes popIn { 0% { opacity: 0; transform: translateY(8px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-rose-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-rose-500 selection:text-white flex flex-col justify-between">
 
     <!-- Top Navigation Bar -->
-    <header class="border-b border-slate-800/80 bg-slate-900/70 backdrop-blur sticky top-0 z-50">
+    <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <span class="text-2xl">🛡️</span>
@@ -30,23 +30,23 @@
                     <p class="text-xs text-slate-400">Live Adversarial Attack Simulator & Bayesian Trust Decay</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-3 text-sm">
-                <a href="/index.html" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5 font-mono text-xs">
-                    <span>📱</span> Live KYC Demo
+            <div class="flex items-center space-x-2 sm:space-x-3 text-sm">
+                <a href="/index.html" id="nav-kyc-demo-top" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-500 text-slate-200 transition-colors flex items-center gap-1.5 font-mono text-xs shadow-sm">
+                    <span>📱</span> <span>Live KYC Demo</span>
                 </a>
-                <a href="/dashboard.html" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5 font-mono text-xs">
-                    <span>📊</span> Auditor Dashboard
+                <a href="/dashboard.html" id="nav-dashboard-top" class="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 hover:border-slate-500 text-slate-200 transition-colors flex items-center gap-1.5 font-mono text-xs shadow-sm">
+                    <span>📊</span> <span>Auditor Dashboard</span>
                 </a>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full flex-grow">
 
-        <!-- Intro Banner -->
-        <div class="rounded-2xl border border-red-900/50 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 p-6 md:p-8 relative overflow-hidden">
+        <!-- Intro Banner with Navigation Quicklinks -->
+        <div class="rounded-2xl border border-red-900/50 bg-gradient-to-br from-red-950/40 via-slate-900 to-slate-950 p-6 md:p-8 relative overflow-hidden shadow-2xl">
             <div class="absolute -right-12 -top-12 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="max-w-3xl space-y-2">
+            <div class="max-w-4xl space-y-3">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950 border border-red-800/60 text-xs font-mono text-red-400">
                     <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
                     ACTIVE ADVERSARIAL TESTBENCH — 0% MOCK DATA
@@ -55,14 +55,23 @@
                     Evaluate Multi-Modal KYC Resiliency in Real Time
                 </h2>
                 <p class="text-slate-300 text-sm leading-relaxed">
-                    Select an attack vector below to inject actual adversarial samples into the production pipeline.
+                    Select any attack vector below to inject actual adversarial samples into the production pipeline.
                     Watch how each forensic layer catches synthesized artifacts, audio cloning, cryptographic tampering, and checksum violations in real time with dynamic trust decay and immutable audit hashing.
                 </p>
+                <div class="pt-2 flex flex-wrap gap-2 text-xs font-mono">
+                    <span class="text-slate-500 self-center mr-1">Quick Navigation:</span>
+                    <a href="/index.html" class="px-2.5 py-1 rounded border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-300 transition-colors">
+                        ← Back to 4-Stage Live Onboarding
+                    </a>
+                    <a href="/dashboard.html" class="px-2.5 py-1 rounded border border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-300 transition-colors">
+                        📊 Open Auditor Telemetry Dashboard →
+                    </a>
+                </div>
             </div>
         </div>
 
-        <!-- 2. RANDOMIZED CHALLENGE DISPLAY (Illustrative of Live Capture Pipeline) -->
-        <div class="rounded-xl border border-indigo-900/40 bg-slate-900/80 p-5 space-y-3 relative overflow-hidden">
+        <!-- Adaptive Challenge Preview -->
+        <div class="rounded-xl border border-indigo-900/40 bg-slate-900/80 p-5 space-y-3 relative overflow-hidden shadow-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-indigo-400 text-lg">⚡</span>
@@ -103,7 +112,7 @@
             </div>
 
             <p class="text-[11px] text-slate-400 leading-normal pt-1">
-                <span class="text-indigo-400 font-semibold">💡 Live Capture Context:</span> During actual live onboarding, Sentinel synthesizes a randomized 5-character nonce with dynamic head-pose tracking. The attack simulator below submits real adversarial datasets against this pipeline to verify multi-modal rejection.
+                <span class="text-indigo-400 font-semibold">💡 Live Capture Context:</span> During live onboarding, Sentinel enforces a dynamic single-use 5-character nonce with dynamic head-pose tracking. The attack simulator below tests pre-recorded adversarial vectors against these pipeline defenses.
             </p>
         </div>
 
@@ -113,7 +122,7 @@
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
                     <span>⚡</span> 1. Select Attack Vector
                 </h3>
-                <span class="text-xs text-slate-400">All attacks run against real PyTorch / FFT / Cryptography / Verhoeff engines</span>
+                <span id="scenarios-counter" class="text-xs text-slate-400 font-mono">6 scenarios loaded</span>
             </div>
 
             <div id="scenarios-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -133,7 +142,7 @@
                 </div>
             </div>
 
-            <!-- 1. TRUST DECAY VISUALIZATION CARD -->
+            <!-- TRUST DECAY VISUALIZATION CARD -->
             <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 space-y-4 shadow-xl">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
                     <div>
@@ -245,8 +254,11 @@
 
                 <!-- Right Col: Cryptographic Audit Hash -->
                 <div class="space-y-4">
-                    <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider">
-                        Immutable Audit Trail
+                    <h4 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                        <span>Immutable Audit Trail</span>
+                        <a href="/dashboard.html" id="link-dashboard-panel" class="text-[11px] font-mono text-amber-400 hover:text-amber-300 underline">
+                            View Full Chain →
+                        </a>
                     </h4>
                     <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3 font-mono text-xs">
                         <div>
@@ -265,10 +277,11 @@
                             <div class="text-[11px] text-slate-500">TIMESTAMP & LATENCY</div>
                             <div id="audit-timing" class="text-slate-300">--</div>
                         </div>
-                        <div class="pt-2 border-t border-slate-800/80">
-                            <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
-                                <span>🔒</span> Validated on local audit chain
-                            </span>
+                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                            <a href="/dashboard.html" id="link-verify-ledger" class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 underline font-semibold">
+                                <span>🔒</span> Validated on local audit ledger
+                            </a>
+                            <span class="text-[10px] text-slate-500">Tamper-evident</span>
                         </div>
                     </div>
                 </div>
@@ -279,9 +292,28 @@
 
     </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-slate-800/60 mt-12 py-6 text-center text-xs text-slate-500 font-mono">
-        Aegis-KYC Red-Team Environment • Real Model Inference • UIDAI Signature Verification • Verhoeff D5 Checksum
+    <!-- Bottom Navigation Bar & Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-900/80 backdrop-blur py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-400">
+            <div class="flex items-center space-x-2">
+                <span>🛡️ Aegis-KYC Red-Team Environment</span>
+                <span class="text-slate-600">•</span>
+                <span>Real Model Inferences</span>
+                <span class="text-slate-600">•</span>
+                <span>UIDAI RSA-2048</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/index.html" id="nav-kyc-demo-bottom" class="text-slate-300 hover:text-white underline">
+                    📱 Live KYC Demo
+                </a>
+                <a href="/dashboard.html" id="nav-dashboard-bottom" class="text-slate-300 hover:text-white underline">
+                    📊 Auditor Dashboard
+                </a>
+                <a href="#top" class="text-slate-500 hover:text-slate-300">
+                    ↑ Back to top
+                </a>
+            </div>
+        </div>
     </footer>
 
     <script>
@@ -303,6 +335,13 @@
         const NONCE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
         const SCENARIO_META = {
+            'deepfake_face': {
+                icon: '🎭',
+                category: 'BIOMETRIC SPOOF',
+                title: 'Face Swap / Deepfake Face',
+                badgeColor: 'border-red-500/40 text-red-400 bg-red-950/40',
+                btnColor: 'hover:border-red-500 hover:bg-red-950/20'
+            },
             'face_deepfake': {
                 icon: '🎭',
                 category: 'BIOMETRIC SPOOF',
@@ -331,12 +370,26 @@
                 badgeColor: 'border-orange-500/40 text-orange-400 bg-orange-950/40',
                 btnColor: 'hover:border-orange-500 hover:bg-orange-950/20'
             },
+            'invalid_qr': {
+                icon: '🪪',
+                category: 'CRYPTOGRAPHIC / CHECKSUM',
+                title: 'Invalid Aadhaar QR / Checksum',
+                badgeColor: 'border-rose-500/40 text-rose-400 bg-rose-950/40',
+                btnColor: 'hover:border-rose-500 hover:bg-rose-950/20'
+            },
             'invalid_aadhaar': {
                 icon: '🪪',
                 category: 'CRYPTOGRAPHIC / CHECKSUM',
                 title: 'Invalid Aadhaar QR / Checksum',
                 badgeColor: 'border-rose-500/40 text-rose-400 bg-rose-950/40',
                 btnColor: 'hover:border-rose-500 hover:bg-rose-950/20'
+            },
+            'clean_control': {
+                icon: '✅',
+                category: 'CONTROL BENCHMARK',
+                title: 'Genuine Clean Submission',
+                badgeColor: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/40',
+                btnColor: 'hover:border-emerald-500 hover:bg-emerald-950/20'
             },
             'clean_submission': {
                 icon: '✅',
@@ -369,17 +422,34 @@
             generateRandomChallenge();
             try {
                 const res = await fetch('/api/redteam/scenarios');
-                scenarios = await res.json();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                
+                // Robust parsing of both array shapes and object maps
+                scenarios = {};
+                const list = Array.isArray(data) ? data : (data.scenarios || Object.values(data));
+                list.forEach(item => {
+                    if (item && typeof item === 'object') {
+                        const key = item.id || item.name;
+                        if (key && key !== 'ok') {
+                            scenarios[key] = item;
+                        }
+                    }
+                });
+
+                if (Object.keys(scenarios).length === 0) {
+                    throw new Error("No valid scenarios parsed from API response");
+                }
                 renderScenarios();
             } catch (err) {
-                console.error('Failed to load redteam scenarios:', err);
+                console.warn('Fallback default scenarios used due to fetch error:', err);
                 scenarios = {
-                    'face_deepfake': { name: 'Face Swap / Deepfake Face', description: 'Synthetic face with high frequency blending boundaries' },
-                    'voice_spoof': { name: 'Cloned/TTS Voice', description: 'Synthetic audio generated with Neural TTS' },
-                    'genai_doc': { name: 'AI-Generated Document', description: 'Diffusion-generated artificial ID card' },
-                    'tampered_doc': { name: 'Tampered Document (Spliced/EXIF)', description: 'Photoshop manipulated EXIF metadata & spliced fields' },
-                    'invalid_aadhaar': { name: 'Invalid Aadhaar QR/Checksum', description: 'Forged Aadhaar card with Verhoeff D5 failure' },
-                    'clean_submission': { name: 'Genuine Clean Submission', description: 'Authentic genuine document with pristine signals' }
+                    'deepfake_face': { id: 'deepfake_face', title: 'Face Swap / Deepfake Face', description: 'Synthetic face with high frequency blending boundaries', target_signal: 'face_deepfake' },
+                    'voice_spoof': { id: 'voice_spoof', title: 'Cloned / TTS Synthetic Voice', description: 'Synthetic audio generated with Neural TTS', target_signal: 'voice_spoof' },
+                    'genai_doc': { id: 'genai_doc', title: 'AI-Generated Document', description: 'Diffusion-generated artificial ID card', target_signal: 'genai_doc' },
+                    'tampered_doc': { id: 'tampered_doc', title: 'Tampered Real Document (Spliced/EXIF)', description: 'Photoshop manipulated EXIF metadata & spliced fields', target_signal: 'exif' },
+                    'invalid_qr': { id: 'invalid_qr', title: 'Invalid Aadhaar QR / Checksum Mismatch', description: 'Forged Aadhaar card with Verhoeff D5 failure', target_signal: 'crossfield' },
+                    'clean_control': { id: 'clean_control', title: 'Genuine Clean Submission (Control)', description: 'Authentic genuine document with pristine signals', target_signal: 'none' }
                 };
                 renderScenarios();
             }
@@ -387,19 +457,23 @@
 
         function renderScenarios() {
             const grid = document.getElementById('scenarios-grid');
+            if (!grid) return;
             grid.innerHTML = '';
+
+            const keys = Object.keys(scenarios);
+            document.getElementById('scenarios-counter').innerText = `${keys.length} scenarios loaded`;
 
             for (const [key, sc] of Object.entries(scenarios)) {
                 const meta = SCENARIO_META[key] || {
                     icon: '⚡',
                     category: 'ATTACK VECTOR',
-                    title: sc.name || key,
+                    title: sc.title || sc.name || key,
                     badgeColor: 'border-slate-700 text-slate-300 bg-slate-900',
                     btnColor: 'hover:border-slate-500'
                 };
 
                 const card = document.createElement('div');
-                card.className = `rounded-xl border border-slate-800 bg-slate-900/70 p-5 flex flex-col justify-between transition-all duration-200 cursor-pointer ${meta.btnColor} hover:shadow-lg group relative`;
+                card.className = `scenario-card rounded-xl border border-slate-800 bg-slate-900/70 p-5 flex flex-col justify-between transition-all duration-200 cursor-pointer ${meta.btnColor} hover:shadow-lg group relative`;
                 card.onclick = () => runAttack(key);
 
                 card.innerHTML = `
@@ -414,7 +488,7 @@
                         </div>
                     </div>
                     <div class="pt-4 mt-4 border-t border-slate-800/60 flex items-center justify-between text-xs font-mono">
-                        <span class="text-slate-500 group-hover:text-slate-300 transition-colors">Target: ${sc.target_detector || 'Multi-Modal'}</span>
+                        <span class="text-slate-500 group-hover:text-slate-300 transition-colors">Target: ${sc.target_signal || sc.target_detector || 'Multi-Modal'}</span>
                         <button id="btn-${key}" class="px-3 py-1.5 rounded-lg bg-slate-800 group-hover:bg-red-600 text-slate-200 group-hover:text-white font-semibold transition-all flex items-center gap-1">
                             <span>Execute</span> <span class="group-hover:translate-x-0.5 transition-transform">→</span>
                         </button>
@@ -426,15 +500,17 @@
 
         async function runAttack(scenarioKey) {
             const execSec = document.getElementById('execution-section');
-            execSec.classList.remove('hidden');
-            execSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (execSec) {
+                execSec.classList.remove('hidden');
+                execSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
 
             // Randomize challenge prompt to illustrate adaptive context
             generateRandomChallenge();
 
-            // Set loading on the button
+            // Set loading on the button with safe fallbacks
             const btn = document.getElementById(`btn-${scenarioKey}`);
-            const origBtnText = btn ? btn.innerHTML : 'Execute →';
+            const origBtnText = btn ? btn.innerHTML : '<span>Execute</span> <span>→</span>';
             if (btn) btn.innerHTML = '<span class="animate-spin inline-block mr-1">↻</span> Running...';
 
             // Reset narrative card displays
@@ -482,13 +558,16 @@
                 document.getElementById('narrative-tier-badge').innerText = 'ERROR';
                 document.getElementById('narrative-tier-badge').className = 'mt-1 inline-block px-3 py-1 rounded text-sm font-bold tracking-wide bg-red-950 text-red-300 border border-red-800';
             } finally {
-                if (btn) btn.innerHTML = origBtnText;
+                // Guaranteed button text reset in finally block
+                if (btn) {
+                    btn.innerHTML = origBtnText;
+                }
             }
         }
 
         async function animateTrustDecayAndResults(scenarioKey, data, latency) {
             const decision = data.decision || data.final || {};
-            const sc = data.scenario || {};
+            const sc = data.scenario || scenarios[scenarioKey] || {};
             const sampleInfo = data.sample_info || {};
             const audit = data.audit || {};
             const signals = decision.signals || [];
@@ -497,12 +576,13 @@
             const finalTrustScore = Math.max(0, Math.min(100, Math.round(100.0 - rawScore)));
 
             // 1. Vector static info
-            document.getElementById('narrative-vector-title').innerText = sc.name || SCENARIO_META[scenarioKey]?.title || scenarioKey;
+            document.getElementById('narrative-vector-title').innerText = sc.title || sc.name || SCENARIO_META[scenarioKey]?.title || scenarioKey;
             document.getElementById('narrative-vector-desc').innerText = sc.description || '';
-            document.getElementById('narrative-sample-name').innerText = sampleInfo.path || (sampleInfo.type || 'Repo test fixture');
+            document.getElementById('narrative-sample-name').innerText = sampleInfo.path || sc.payload || (sampleInfo.type || 'Repo test fixture');
 
             // Find primary triggered signal or top signal
-            let primarySignal = signals.find(s => s.module === sc.target_detector || s.signal_name === sc.target_detector || s.signal === sc.target_detector);
+            const targetSigName = sc.target_signal || sc.target_detector || '';
+            let primarySignal = signals.find(s => s.module === targetSigName || s.signal_name === targetSigName || s.signal === targetSigName);
             if (!primarySignal) {
                 primarySignal = [...signals].sort((a, b) => b.confidence - a.confidence)[0] || {
                     module: 'None', signal_name: 'clean', confidence: 0.0, raw_score: 0.0, details: { status: 'Pristine' }
@@ -517,7 +597,7 @@
             // Evidence key & detail
             let evidenceKey = 'Artifact Detected';
             let evidenceDetail = JSON.stringify(primarySignal.details || {}, null, 2);
-            if (scenarioKey === 'clean_submission' || finalTier === 'CLEAR') {
+            if (scenarioKey === 'clean_submission' || scenarioKey === 'clean_control' || finalTier === 'CLEAR') {
                 evidenceKey = 'Zero Anomalies Detected';
                 evidenceDetail = 'All spectral, biometric, and cryptographic checks passed with high confidence.';
             } else if (scenarioKey === 'invalid_aadhaar' || scenarioKey === 'invalid_qr') {
@@ -549,7 +629,7 @@
 
             for (const sig of signals) {
                 stepIdx++;
-                await sleep(350);
+                await sleep(300);
 
                 const isAnomalous = Boolean(sig.triggered || sig.confidence >= 0.5 || sig.raw_score >= 0.5);
                 const sigName = sig.signal_name || sig.signal || sig.module;
@@ -560,7 +640,6 @@
                 logItem.className = 'flex items-center justify-between p-1.5 rounded bg-slate-950/60 border border-slate-800/80 signal-pop';
                 
                 if (isAnomalous) {
-                    // Penalty step down
                     const stepPenalty = (sig.confidence || 0.5) * 25.0;
                     currentTrust = Math.max(finalTrustScore, Math.round(currentTrust - stepPenalty));
 
@@ -616,7 +695,7 @@
             }
 
             // Final convergence to real final score
-            await sleep(250);
+            await sleep(200);
             currentTrust = finalTrustScore;
             document.getElementById('trust-percentage').innerText = `${currentTrust}%`;
             document.getElementById('trust-bar').style.width = `${currentTrust}%`;
