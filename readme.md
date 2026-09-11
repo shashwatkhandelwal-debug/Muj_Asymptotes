@@ -104,9 +104,9 @@ Modern identity fraud in high-stakes video onboarding (banking, fintech, border 
 ### 3.1 UIDAI Aadhaar Verhoeff D5 Dihedral Group Checksum
 Every genuine 12-digit Indian Aadhaar number is mathematically constrained by the **Verhoeff algorithm** operating over the non-commutative dihedral group $D_5$ (symmetries of a regular pentagon):
 
-$$\sum_{i=0}^{n-1} d\left(c, F(d_i, \operatorname{inv}(i \bmod 8))\right) = 0 \quad \text{in } D_5$$
+$$\sum_{i=0}^{n-1} d\left(c, F(d_i, \mathrm{inv}(i \bmod 8))\right) = 0 \quad \text{in } D_5$$
 
-Where $d(j, k)$ represents the $D_5$ multiplication table, $F(i, j)$ is the permutation matrix, and $\operatorname{inv}(j)$ is the inverse element. This mathematically catches **100% of all single-digit transcription errors** and **95.4% of twin transposition errors** before invoking computer vision or OCR layers.
+Where $d(j, k)$ represents the $D_5$ multiplication table, $F(i, j)$ is the permutation matrix, and $\mathrm{inv}(j)$ is the inverse element. This mathematically catches **100% of all single-digit transcription errors** and **95.4% of twin transposition errors** before invoking computer vision or OCR layers.
 
 ### 3.2 Empirical Platt Scaling Calibration
 Rather than relying on uncalibrated heuristic scores, all detector outputs are transformed into genuine posterior probabilities via empirical **Platt Scaling** fitted with logistic regression against benchmark calibration datasets:
@@ -135,7 +135,7 @@ if any(sig.severity == Severity.HARD and sig.triggered for sig in signals):
 ### 3.4 2-of-3 Shamir's Secret Sharing (SSS) & Hash-Chained Ledger
 To prevent insider tampering with forensic verification records:
 1. Every verification event is cryptographically sealed into an append-only **HMAC-SHA256 block ledger**:
-   $$H_n = \operatorname{HMAC-SHA256}\left(H_{n-1} \parallel \text{Timestamp} \parallel \text{SessionID} \parallel \text{DecisionTier} \parallel \text{SignalVector}, \text{Pepper}\right)$$
+   $$H_n = \text{HMAC-SHA256}\left(H_{n-1} \parallel \text{Timestamp} \parallel \text{SessionID} \parallel \text{DecisionTier} \parallel \text{SignalVector}, \text{Pepper}\right)$$
 2. The verification master $\text{Pepper}$ is split into 3 polynomial shares using Shamir's Secret Sharing over the finite field $\mathbb{F}_{256}$:
    $$f(x) = S + a_1 x \pmod p$$
    Reconstructing the pepper to audit or verify database integrity requires a **2-of-3 quorum** of distinct compliance officers, ensuring non-repudiation and immutable evidence trails at rest.
