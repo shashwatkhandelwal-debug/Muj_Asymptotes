@@ -17,3 +17,10 @@ notebooks/*.ipynb_checkpoints
 
 # Runtime Audit DB
 audit.db
+audit.db-shm
+audit.db-wal
+
+# Ignored Documentation & Notes
+docs/
+ONBOARD.md
+onboard.md
