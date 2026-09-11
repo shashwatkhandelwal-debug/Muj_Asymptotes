@@ -124,6 +124,12 @@ def fit_calibrator(scores, labels, signal_name):
     coef = float(lr.coef_[0][0])
     intercept = float(lr.intercept_[0])
 
+    if coef <= 0:
+        from modules.decision.calibration import DEFAULT_CALIBRATIONS
+        default_entry = DEFAULT_CALIBRATIONS.get(signal_name, {"coef": 2.2087, "intercept": -1.0710})
+        print(f"  [Notice] Fitted non-positive slope ({coef:.4f}) for {signal_name}; using calibrated prior: {default_entry}")
+        return default_entry
+
     print(f"  >> {signal_name} Platt Scaling - Coef: {coef:.4f}, Intercept: {intercept:.4f}")
     return {"coef": coef, "intercept": intercept}
 

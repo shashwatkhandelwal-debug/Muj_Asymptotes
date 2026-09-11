@@ -180,6 +180,8 @@ def detect_genai_document(image_path: str) -> SignalResult:
                 inputs = processor(images=pil_img, return_tensors="pt")
                 with torch.no_grad():
                     image_features = clip_model.get_image_features(**inputs)
+                    if hasattr(image_features, "pooler_output") and image_features.pooler_output is not None:
+                        image_features = image_features.pooler_output
                     image_features = image_features / image_features.norm(dim=-1, keepdim=True)
                     logit = probe_head(image_features.float())
                     raw_score = float(torch.sigmoid(logit).item())

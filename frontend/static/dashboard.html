@@ -808,13 +808,16 @@
      * Data layer per Section 3
      */
     async function loadData() {
-      try {
-        const res = await fetch("/api/verify/last");
-        if (res.ok) {
-          const d = await res.json();
-          if (!d.error) return d;
-        }
-      } catch (e) {}
+      const endpoints = ["/api/verify/last", "http://localhost:8000/api/verify/last"];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep);
+          if (res.ok) {
+            const d = await res.json();
+            if (d && !d.error) return d;
+          }
+        } catch (e) {}
+      }
       try {
         const res = await fetch("verify_sample.json");
         if (res.ok) return await res.json();
@@ -1264,10 +1267,18 @@
       }
       setInterval(async () => {
         try {
-          const res = await fetch("/api/verify/last");
-          if (res.ok) {
-            const d = await res.json();
-            if (!d.error) render(d);
+          const endpoints = ["/api/verify/last", "http://localhost:8000/api/verify/last"];
+          for (const ep of endpoints) {
+            try {
+              const res = await fetch(ep);
+              if (res.ok) {
+                const d = await res.json();
+                if (d && !d.error) {
+                  render(d);
+                  break;
+                }
+              }
+            } catch (_) {}
           }
         } catch (e) {}
       }, 5000);

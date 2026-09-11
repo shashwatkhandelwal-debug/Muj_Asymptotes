@@ -85,7 +85,10 @@ def run_challenge(video_path: str, audio_path: str, ch: Challenge,
     from modules.audio.asr import score_name_match
     from modules.audio.antispoof import score_voice_spoof
 
-    frames = _decode_frames(video_path)
+    if isinstance(video_path, list):
+        frames = video_path
+    else:
+        frames = _decode_frames(video_path)
     active_liveness = score_action(frames, ch.action)
     name_match = score_name_match(audio_path, ocr_name, ch.nonce, ch.date_str)
     voice_spoof = score_voice_spoof(audio_path)

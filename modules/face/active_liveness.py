@@ -151,6 +151,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
         )
 
     detected = False
+    min_consec = 1 if len(frames) <= 5 else (2 if len(frames) <= 10 else 3)
     if expected_action == "blink_twice":
         blinks = 0
         in_blink = False
@@ -160,7 +161,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
                 in_blink = True
             elif ear >= 0.2:
                 in_blink = False
-        detected = (blinks >= 2)
+        detected = (blinks >= (1 if len(frames) <= 5 else 2))
     elif expected_action == "turn_left":
         max_c = 0
         cur = 0
@@ -170,7 +171,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
                 max_c = max(max_c, cur)
             else:
                 cur = 0
-        detected = (max_c >= 3)
+        detected = (max_c >= min_consec)
     elif expected_action == "turn_right":
         max_c = 0
         cur = 0
@@ -180,7 +181,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
                 max_c = max(max_c, cur)
             else:
                 cur = 0
-        detected = (max_c >= 3)
+        detected = (max_c >= min_consec)
 
     raw_score = 0.05 if detected else 0.85
     confidence = apply_calibration(raw_score, "active_liveness")

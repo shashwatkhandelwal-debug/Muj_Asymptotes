@@ -30,10 +30,14 @@ def _get_whisper_model():
     _WHISPER_TRIED = True
     try:
         from faster_whisper import WhisperModel
-        # Load local cached model strictly without network calls
-        _WHISPER_MODEL = WhisperModel("tiny", device="cpu", compute_type="int8", local_files_only=True)
+        try:
+            # Load local cached model without network calls
+            _WHISPER_MODEL = WhisperModel("tiny", device="cpu", compute_type="int8", local_files_only=True)
+        except Exception:
+            # Fallback to downloading/caching if not already cached
+            _WHISPER_MODEL = WhisperModel("tiny", device="cpu", compute_type="int8")
     except Exception as e:
-        logger.info("faster-whisper local model not available: %s", e)
+        logger.info("faster-whisper model not available: %s", e)
         _WHISPER_MODEL = None
     return _WHISPER_MODEL
 

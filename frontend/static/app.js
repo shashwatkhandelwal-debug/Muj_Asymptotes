@@ -187,18 +187,16 @@ async function sendChallenge(cropBlobs, audioBlob, ch) {
   formData.append("nonce", ch.nonce);
   formData.append("date_str", ch.date_str);
 
-  try {
-    let res;
+  const endpoints = ["/api/challenge", "http://localhost:8000/api/challenge"];
+  for (const ep of endpoints) {
     try {
-      res = await fetch("/api/challenge", { method: "POST", body: formData });
-    } catch (_) {
-      res = await fetch("http://localhost:8000/api/challenge", { method: "POST", body: formData });
-    }
-    return await res.json();
-  } catch (err) {
-    // 404 or connection failure is expected when backend is offline
-    return { ok: false, error: err.message };
+      const res = await fetch(ep, { method: "POST", body: formData });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (_) {}
   }
+  return { ok: false, error: "Backend challenge endpoint unavailable" };
 }
 
 let currentUIState = null;

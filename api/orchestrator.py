@@ -21,8 +21,10 @@ _repo_root = str(Path(__file__).resolve().parent.parent)
 if _repo_root not in sys.path:
     sys.path.insert(0, _repo_root)
 
+from contextlib import asynccontextmanager
 from shared.contracts import SignalResult, SignalId, SIGNAL_TRIGGER
 from shared.audit_chain import append_entry
+from shared.preprocessing import clahe_rgb, mean_brightness, LOW_LIGHT_THRESHOLD
 from modules.forensics.genai_detector import detect_genai_document
 from modules.face.deepfake_detector import detect_face_deepfake
 from modules.face.challenge import issue_challenge, run_challenge, _decode_frames
@@ -65,15 +67,7 @@ MODEL_PROVENANCE = {
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="HackMUJ Deepfake and Synthetic Identity Detection API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
@@ -126,8 +120,8 @@ def run_existing_pipeline(doc_path: str) -> dict:
         "breakdown": {"ocr": "clean", "signature": "valid", "ela": "clear"},
     }
 
-@app.on_event("startup")
-def load_pepper():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global _PEPPER
     from shared.pepper_sss import generate_pepper, reconstruct_pepper
     shares_env = os.environ.get("AUDIT_SHARES")   # "share1|||share2"
@@ -142,6 +136,16 @@ def load_pepper():
         _PEPPER = generate_pepper()
         print("[audit] WARNING: ephemeral pepper generated. "
               "Chain will not verify across restarts. Demo mode only.")
+    yield
+
+app = FastAPI(title="HackMUJ Deepfake and Synthetic Identity Detection API", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def _save_uploads(document_image: UploadFile, video: UploadFile | None, audio: UploadFile | None) -> tuple[str, str, str]:
     tmp_dir = tempfile.gettempdir()
@@ -266,15 +270,19 @@ async def verify(document_image: UploadFile = File(...),
     ch = issue_challenge(ocr_name)
 
     # 4. Decode frames ONCE, reuse for both B and C-i
-    frames = _decode_frames(video_path) if video_path else []
-    if not frames and doc_path and os.path.exists(doc_path):
+    raw_frames = _decode_frames(video_path) if video_path else []
+    if not raw_frames and doc_path and os.path.exists(doc_path):
         try:
             import cv2
             doc_img = cv2.imread(doc_path)
             if doc_img is not None:
-                frames = [cv2.cvtColor(doc_img, cv2.COLOR_BGR2RGB)]
+                raw_frames = [cv2.cvtColor(doc_img, cv2.COLOR_BGR2RGB)]
         except Exception:
             pass
+
+    # Normalize exposure via CLAHE across video frames
+    frames = [clahe_rgb(f) for f in raw_frames]
+    is_low_light = any(mean_brightness(f) < LOW_LIGHT_THRESHOLD for f in frames) if frames else False
 
     # 5. Fire A, B, C in PARALLEL
     genai_task     = loop.run_in_executor(_executor, detect_genai_document, doc_path)
@@ -284,6 +292,9 @@ async def verify(document_image: UploadFile = File(...),
 
     genai_res, deepfake_res, challenge_results = await asyncio.gather(
         genai_task, deepfake_task, challenge_task)
+
+    if is_low_light and hasattr(deepfake_res, "evidence") and isinstance(deepfake_res.evidence, dict):
+        deepfake_res.evidence["low_light_warning"] = True
 
     # Cross-modal consistency check
     asr_result = next((r for r in challenge_results
@@ -428,7 +439,7 @@ async def handle_challenge(request: Request):
                 img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
                 if img is not None:
                     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                    frames.append(img_rgb)
+                    frames.append(clahe_rgb(img_rgb))
     except Exception as e:
         logger.warning("Frame extraction error: %s", e)
 
@@ -443,10 +454,14 @@ async def handle_challenge(request: Request):
     loop = asyncio.get_event_loop()
     deepfake_task = loop.run_in_executor(_executor, detect_face_deepfake, frames)
     challenge_task = loop.run_in_executor(
-        _executor, run_challenge, "", audio_path, ch, expected_name
+        _executor, run_challenge, frames, audio_path, ch, expected_name
     )
 
     deepfake_res, challenge_results = await asyncio.gather(deepfake_task, challenge_task)
+
+    is_low_light = any(mean_brightness(f) < LOW_LIGHT_THRESHOLD for f in frames) if frames else False
+    if is_low_light and hasattr(deepfake_res, "evidence") and isinstance(deepfake_res.evidence, dict):
+        deepfake_res.evidence["low_light_warning"] = True
 
     # Cross-modal consistency check
     asr_result = next((r for r in challenge_results

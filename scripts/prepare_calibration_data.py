@@ -47,14 +47,15 @@ def prepare_face_deepfake_dataset(target_samples=40):
     real_dir.mkdir(parents=True, exist_ok=True)
     fake_dir.mkdir(parents=True, exist_ok=True)
 
-    existing_real = list(real_dir.glob("*.*"))
-    existing_fake = list(fake_dir.glob("*.*"))
+    existing_real = list(real_dir.glob("*.jpg"))
+    existing_fake = list(fake_dir.glob("*.jpg"))
     if len(existing_real) >= target_samples and len(existing_fake) >= target_samples:
         print(f"✓ Face dataset already has {len(existing_real)} real and {len(existing_fake)} fake images.")
         return
 
-    parquet_url = "https://huggingface.co/datasets/desireemcv/face-real-vs-fake/resolve/main/data/validation-00000-of-00001.parquet"
-    print(f"Downloading validation parquet (10.6 MB) from {parquet_url}...")
+    # Use Thien0103/DeepFake_Extracted_Face_Images (Celeb-DF v2 extracted face images)
+    parquet_url = "https://huggingface.co/datasets/Thien0103/DeepFake_Extracted_Face_Images/resolve/main/data/train-00000-of-00001.parquet"
+    print(f"Downloading Celeb-DF face parquet (28.3 MB) from {parquet_url}...")
     pq_bytes = download_bytes(parquet_url)
     
     import pyarrow.parquet as pq
@@ -62,22 +63,21 @@ def prepare_face_deepfake_dataset(target_samples=40):
     pydict = table.to_pydict()
     print(f"Loaded parquet with columns: {list(pydict.keys())}, length: {len(pydict[list(pydict.keys())[0]])}")
 
-    real_saved, fake_saved = 0, 0
-    img_col = "image" if "image" in pydict else list(pydict.keys())[0]
-    label_col = "label" if "label" in pydict else list(pydict.keys())[1]
-    num_rows = len(pydict[img_col])
+    images = pydict["image"]
+    labels = pydict["label"]
+    num_rows = len(labels)
+
+    real_saved, fake_saved = len(existing_real), len(existing_fake)
 
     for idx in range(num_rows):
-        label_val = pydict[label_col][idx]
-        raw_img = pydict[img_col][idx]
-        is_real = (label_val == 1) if isinstance(label_val, (int, np.integer)) else ("real" in str(label_val).lower())
+        label_val = labels[idx]
+        raw_img = images[idx]
 
-        img_bytes = None
-        if isinstance(raw_img, dict):
-            img_bytes = raw_img.get("bytes")
-        elif isinstance(raw_img, bytes):
-            img_bytes = raw_img
+        # In Thien0103: 0 = fake, 1 = real
+        is_fake = (label_val == 0)
+        is_real = (label_val == 1)
 
+        img_bytes = raw_img.get("bytes") if isinstance(raw_img, dict) else raw_img
         if not img_bytes:
             continue
 
@@ -87,7 +87,7 @@ def prepare_face_deepfake_dataset(target_samples=40):
                 out_path = real_dir / f"real_{real_saved:03d}.jpg"
                 pil_img.save(out_path, quality=95)
                 real_saved += 1
-            elif (not is_real) and fake_saved < target_samples:
+            elif is_fake and fake_saved < target_samples:
                 out_path = fake_dir / f"fake_{fake_saved:03d}.jpg"
                 pil_img.save(out_path, quality=95)
                 fake_saved += 1

@@ -42,18 +42,22 @@ def _get_hf_pipeline():
         return _HF_PIPELINE
     _HF_TRIED = True
     try:
-        from transformers import pipeline, AutoModelForImageClassification, AutoImageProcessor
+        from transformers import AutoImageProcessor, AutoModelForImageClassification, pipeline
         model_id = "dima806/deepfake_vs_real_image_detection"
-        allow_download = os.environ.get("DOWNLOAD_PRETRAINED", "0") == "1"
         try:
+            processor = AutoImageProcessor.from_pretrained(model_id, local_files_only=True)
             model = AutoModelForImageClassification.from_pretrained(model_id, local_files_only=True)
-            proc = AutoImageProcessor.from_pretrained(model_id, local_files_only=True)
-            _HF_PIPELINE = pipeline("image-classification", model=model, image_processor=proc)
+            _HF_PIPELINE = pipeline("image-classification", model=model, image_processor=processor)
         except Exception:
+            allow_download = os.environ.get("DOWNLOAD_PRETRAINED", "1") == "1"
             if allow_download:
-                _HF_PIPELINE = pipeline("image-classification", model=model_id)
+                processor = AutoImageProcessor.from_pretrained(model_id)
+                model = AutoModelForImageClassification.from_pretrained(model_id)
+                _HF_PIPELINE = pipeline("image-classification", model=model, image_processor=processor)
             else:
                 _HF_PIPELINE = None
+        if _HF_PIPELINE is not None:
+            logger.info("Loaded pre-trained HF deepfake detector: %s", model_id)
     except Exception as e:
         logger.info("HF deepfake model not found locally; using frequency fallback: %s", e)
         _HF_PIPELINE = None

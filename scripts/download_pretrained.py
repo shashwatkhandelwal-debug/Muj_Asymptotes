@@ -38,6 +38,15 @@ def download_models():
     except Exception as e:
         logger.warning("Could not pre-download CLIP model: %s", e)
 
+    logger.info("=== 3/3 Pre-downloading faster-whisper tiny for ASR ===")
+    try:
+        from faster_whisper import WhisperModel
+        logger.info("Downloading faster-whisper tiny...")
+        WhisperModel("tiny", device="cpu", compute_type="int8")
+        logger.info("✓ faster-whisper tiny downloaded and cached successfully.")
+    except Exception as e:
+        logger.warning("Could not pre-download faster-whisper model: %s", e)
+
     logger.info("=== Ready for offline demo execution! ===")
 
 if __name__ == "__main__":
