@@ -73,6 +73,7 @@ def _generate_heatmap(gray_img: np.ndarray, heatmap_path: str) -> None:
     ax.axis("off")
     fig.savefig(heatmap_path, bbox_inches="tight", dpi=100)
     plt.close(fig)
+    return heatmap_vals.flatten().tolist()
 
 def detect_genai_document(image_path: str) -> SignalResult:
     """
@@ -127,7 +128,16 @@ def detect_genai_document(image_path: str) -> SignalResult:
         hf_ratio = _compute_patch_hf_ratio(gray_img)
         raw_score = float(min(1.0, max(0.0, hf_ratio * 2.0)))
 
-        _generate_heatmap(gray_img, heatmap_path)
+        grid_scores = _generate_heatmap(gray_img, heatmap_path)
+        spatial_variance = float(np.var(grid_scores))
+
+        # Provenance metadata check
+        from modules.forensics.provenance import check_provenance
+        prov = check_provenance(image_path)
+
+        # Blend provenance into raw_score (20% weight)
+        raw_score = 0.80 * raw_score + 0.20 * prov["provenance_score"]
+        raw_score = float(np.clip(raw_score, 0.0, 1.0))
 
         confidence = apply_calibration(raw_score, "genai_doc")
         triggered = bool(raw_score > SIGNAL_TRIGGER[SignalId.GENAI_DOC])
@@ -149,6 +159,9 @@ def detect_genai_document(image_path: str) -> SignalResult:
                 "heatmap_path": heatmap_path,
                 "method": method,
                 "hf_ratio": hf_ratio,
+                "spatial_variance": round(spatial_variance, 4),
+                "provenance_score": prov["provenance_score"],
+                "provenance_flags": prov["provenance_flags"],
             },
             ok=True,
             ms=elapsed_ms,

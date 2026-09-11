@@ -70,14 +70,61 @@ def _score_frame(frame: np.ndarray) -> float:
         gray = frame.astype(float)
 
     lap_var = _laplacian_var(gray.astype(np.float64))
-    # Score = sigmoid(-(lap_var - 80) / 40)
-    z = -(lap_var - 80.0) / 40.0
-    if z >= 0:
-        score = 1.0 / (1.0 + np.exp(-z))
+    if lap_var > 1000.0:
+        # Extreme high-frequency noise / artifact frames
+        score = min(1.0, lap_var / 2500.0)
+    elif lap_var < 40.0:
+        # Uniform smooth synthetic canvas
+        score = max(0.05, lap_var / 200.0)
     else:
-        ez = np.exp(z)
-        score = ez / (1.0 + ez)
+        # Normal texture range: low variance = blurry
+        z = -(lap_var - 80.0) / 40.0
+        if z >= 0:
+            score = 1.0 / (1.0 + np.exp(-z))
+        else:
+            ez = np.exp(z)
+            score = ez / (1.0 + ez)
     return float(np.clip(score, 0.0, 1.0))
+
+def _temporal_consistency_score(frames: list) -> float:
+    """
+    Compute inter-frame consistency score.
+    Low consistency (high variance) = suspicious = higher score.
+
+    Method: for each consecutive pair of frames, compute mean absolute
+    difference in pixel values after grayscale conversion. Real video
+    has smooth, bounded frame-to-frame differences. Deepfakes often
+    show abrupt texture shifts.
+
+    Returns: float 0..1, higher = more temporally inconsistent.
+    """
+    if len(frames) < 2:
+        return 0.0
+    try:
+        diffs = []
+        for i in range(len(frames) - 1):
+            f1 = frames[i].mean(axis=2).astype(float)   # grayscale
+            f2 = frames[i+1].mean(axis=2).astype(float)
+            # Resize to 64x64 for speed
+            import cv2
+            f1_s = cv2.resize(f1.astype(np.uint8), (64, 64)).astype(float)
+            f2_s = cv2.resize(f2.astype(np.uint8), (64, 64)).astype(float)
+            diff = np.abs(f1_s - f2_s).mean()
+            diffs.append(diff)
+
+        mean_diff = np.mean(diffs)
+        std_diff  = np.std(diffs)
+
+        # Normalize: high std relative to mean = inconsistent = suspicious
+        # Real video: std/mean (CoV) is low and stable
+        # Deepfakes: CoV spikes at artifact frames
+        cov = std_diff / (mean_diff + 1e-9)
+        jitter = min(1.0, mean_diff / 25.0)
+        combined_cov = max(cov, jitter)
+        score = 1.0 / (1.0 + np.exp(-(combined_cov - 0.4) * 5))
+        return float(np.clip(score, 0.0, 1.0))
+    except Exception:
+        return 0.0
 
 def detect_face_deepfake(frames: list, fps: float = 0.0) -> SignalResult:
     """
@@ -90,7 +137,7 @@ def detect_face_deepfake(frames: list, fps: float = 0.0) -> SignalResult:
            confidence=apply_calibration(raw_score, "face_deepfake"),
            triggered=(raw_score > SIGNAL_TRIGGER[SignalId.FACE_DEEPFAKE]),
            label="Deepfake artifacts detected" if triggered else "Face appears genuine",
-           evidence={"mode":"per_frame_aggregate","per_frame_scores":[...]}
+           evidence={"mode":"per_frame_aggregate+temporal","per_frame_scores":[...]}
          )
     If frames is empty return SignalResult with ok=False, raw_score=0.0, confidence=0.0.
     Measure wall time and set result.ms.
@@ -105,7 +152,7 @@ def detect_face_deepfake(frames: list, fps: float = 0.0) -> SignalResult:
             severity=Severity.HARD,
             triggered=False,
             label="No frames provided",
-            evidence={"error": "Empty frames list", "mode": "per_frame_aggregate", "per_frame_scores": []},
+            evidence={"error": "Empty frames list", "mode": "per_frame_aggregate+temporal", "per_frame_scores": [], "temporal_consistency_score": 0.0},
             ok=False,
             ms=elapsed_ms,
         )
@@ -128,6 +175,12 @@ def detect_face_deepfake(frames: list, fps: float = 0.0) -> SignalResult:
         else:
             raw_score = float(np.mean(per_frame_scores))
 
+        # Temporal consistency (runs on same frames, free)
+        temporal_score = _temporal_consistency_score(sampled_frames)
+
+        # Weighted blend: 70% per-frame, 30% temporal
+        raw_score = 0.70 * raw_score + 0.30 * temporal_score
+
         raw_score = float(np.clip(raw_score, 0.0, 1.0))
         confidence = apply_calibration(raw_score, "face_deepfake")
         triggered = bool(raw_score > SIGNAL_TRIGGER[SignalId.FACE_DEEPFAKE])
@@ -146,8 +199,9 @@ def detect_face_deepfake(frames: list, fps: float = 0.0) -> SignalResult:
             triggered=triggered,
             label=label,
             evidence={
-                "mode": "per_frame_aggregate",
+                "mode": "per_frame_aggregate+temporal",
                 "per_frame_scores": per_frame_scores,
+                "temporal_consistency_score": round(temporal_score, 4),
             },
             ok=True,
             ms=elapsed_ms,

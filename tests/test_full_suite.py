@@ -626,3 +626,73 @@ def test_signal_result_ms_set():
     finally:
         if os.path.exists(img_path):
             os.unlink(img_path)
+
+
+# ============================================================================
+# GROUP 11 — Enhancement tests (8 new tests)
+# ============================================================================
+
+def test_replay_attack_script_exists():
+    assert Path("scripts/demo_replay_attack.py").exists()
+
+def test_temporal_consistency_in_evidence():
+    frames = [np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+              for _ in range(20)]
+    r = detect_face_deepfake(frames)
+    assert "temporal_consistency_score" in r.evidence
+    assert 0 <= r.evidence["temporal_consistency_score"] <= 1
+
+def test_provenance_module():
+    from modules.forensics.provenance import check_provenance
+    arr = np.random.randint(0, 255, (400, 300, 3), dtype=np.uint8)
+    tmp = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    Image.fromarray(arr).save(tmp.name)
+    tmp.close()
+    result = check_provenance(tmp.name)
+    assert "provenance_score" in result
+    assert "provenance_flags" in result
+    assert 0 <= result["provenance_score"] <= 1
+    os.unlink(tmp.name)
+
+def test_genai_provenance_in_evidence():
+    arr = np.random.randint(0, 255, (300, 200, 3), dtype=np.uint8)
+    tmp = tempfile.NamedTemporaryFile(suffix='.jpg', delete=False)
+    Image.fromarray(arr).save(tmp.name)
+    tmp.close()
+    r = detect_genai_document(tmp.name)
+    assert "provenance_score" in r.evidence
+    assert "provenance_flags" in r.evidence
+    os.unlink(tmp.name)
+
+def test_cross_modal_consistency_all_match():
+    from modules.decision.cross_modal import check_cross_modal_consistency
+    r = check_cross_modal_consistency("Priya Sharma", "priya sharma")
+    assert r["all_consistent"] is True
+    assert r["consistency_score"] == 0.0
+
+def test_cross_modal_consistency_mismatch():
+    from modules.decision.cross_modal import check_cross_modal_consistency
+    r = check_cross_modal_consistency("Priya Sharma", "John Smith")
+    assert r["all_consistent"] is False
+    assert len(r["mismatches"]) >= 1
+
+def test_temporal_jitter_higher_than_smooth():
+    smooth = np.full((224, 224, 3), 128, dtype=np.uint8)
+    smooth_frames = [smooth.copy() for _ in range(20)]
+    jitter_frames = [np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+                     for _ in range(20)]
+    r_smooth = detect_face_deepfake(smooth_frames)
+    r_jitter = detect_face_deepfake(jitter_frames)
+    assert r_jitter.raw_score >= r_smooth.raw_score
+
+def test_cross_modal_three_way():
+    from modules.decision.cross_modal import check_cross_modal_consistency
+    # All three match
+    r = check_cross_modal_consistency("Priya Sharma", "priya sharma",
+                                      "PRIYA SHARMA")
+    assert r["all_consistent"] is True
+    # Doc mismatch
+    r2 = check_cross_modal_consistency("Priya Sharma", "Priya Sharma",
+                                       "Rahul Verma")
+    assert r2["all_consistent"] is False
+

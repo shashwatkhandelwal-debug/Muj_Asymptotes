@@ -158,12 +158,36 @@ async function sendChallenge(cropBlobs, audioBlob, ch) {
   }
 }
 
+let currentUIState = null;
+
 /**
  * UI State Renderer (§5.8)
  */
 function renderUIState(state, data = {}) {
   const root = document.getElementById("capture-root");
   if (!root) return;
+
+  // If already in warning_brightness, avoid DOM thrashing: just update the readout
+  if (currentUIState === "warning_brightness" && state === "warning_brightness") {
+    const warnLux = document.getElementById("warnLux");
+    if (warnLux) warnLux.innerText = data.lux || 0;
+    if (overrideAvailable) {
+      const btn = document.getElementById("btnOverride");
+      if (btn) {
+        btn.style.display = "inline-flex";
+        btn.onclick = () => {
+          if (brightnessPollTimer) {
+            clearInterval(brightnessPollTimer);
+            brightnessPollTimer = null;
+          }
+          runRecordingSequence();
+        };
+      }
+    }
+    return;
+  }
+
+  currentUIState = state;
 
   switch (state) {
     case "idle":
@@ -230,17 +254,23 @@ function renderUIState(state, data = {}) {
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">WAITING FOR ILLUMINATION...</span>
-            <button id="btnOverride" class="btn-terminal" style="${overrideAvailable ? '' : 'display: none;'} color: var(--review); border-color: rgba(245,158,11,0.3);">
+            <button id="btnOverride" class="btn-terminal" style="${overrideAvailable ? 'display: inline-flex;' : 'display: none;'} color: var(--review); border-color: rgba(245,158,11,0.3);">
               <span>[OVERRIDE]</span>
             </button>
           </div>
         </div>
       `;
       if (overrideAvailable) {
-        document.getElementById("btnOverride")?.addEventListener("click", () => {
-          stopMediaTracks();
-          runRecordingSequence();
-        });
+        const btn = document.getElementById("btnOverride");
+        if (btn) {
+          btn.onclick = () => {
+            if (brightnessPollTimer) {
+              clearInterval(brightnessPollTimer);
+              brightnessPollTimer = null;
+            }
+            runRecordingSequence();
+          };
+        }
       }
       break;
 
@@ -252,7 +282,7 @@ function renderUIState(state, data = {}) {
               <span class="rec-dot"></span>
               <span class="eyebrow" style="color: var(--flagged);">RECORDING LIVE CAPTURE</span>
             </div>
-            <span class="mono" style="font-size: 11px; color: var(--text-secondary);">480P @ 15FPS // OPUS 16KHZ</span>
+            <span class="mono" style="font-size: 11px; color: var(--text-secondary);">480P @ 30FPS // OPUS 16KHZ</span>
           </div>
 
           <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; overflow: hidden; margin-bottom: 16px;">
@@ -342,14 +372,14 @@ async function startCaptureWorkflow() {
   dimWaitSeconds = 0;
 
   try {
-    // 1. getUserMedia (§5.2)
+    // 1. getUserMedia (§5.2) — use ideal 30fps to match 50Hz/60Hz indoor AC lighting anti-flicker
     activeStream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 15 } },
+      video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
       audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
     });
 
     renderUIState("checking_brightness", { lux: 0 });
-    const video = document.getElementById("captureVideo");
+    let video = document.getElementById("captureVideo");
     const canvas = document.getElementById("calcCanvas");
     video.srcObject = activeStream;
     await video.play();
@@ -360,7 +390,9 @@ async function startCaptureWorkflow() {
 
     // 2. Brightness gate polling (§5.3)
     brightnessPollTimer = setInterval(() => {
-      if (!activeStream || !video) return;
+      if (!activeStream) return;
+      video = document.getElementById("captureVideo");
+      if (!video) return;
 
       const lux = Math.round(checkBrightness(video, canvas, ctx));
       const luxReadout = document.getElementById("luxReadout");
@@ -380,6 +412,7 @@ async function startCaptureWorkflow() {
         const warnVideo = document.getElementById("captureVideo");
         if (warnVideo && warnVideo.srcObject !== activeStream) {
           warnVideo.srcObject = activeStream;
+          warnVideo.play().catch(() => {});
         }
       } else {
         // Adequate lighting -> clear gate and begin recording
@@ -405,7 +438,7 @@ async function runRecordingSequence() {
   const canvas = document.getElementById("calcCanvas");
   if (video && activeStream && video.srcObject !== activeStream) {
     video.srcObject = activeStream;
-    await video.play();
+    await video.play().catch(() => {});
   }
   const ctx = canvas.getContext("2d");
 

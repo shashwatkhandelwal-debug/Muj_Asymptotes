@@ -262,7 +262,7 @@
     .gauge-fill {
       height: 100%;
       width: 0%;
-      transition: width 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: width 0.8s ease-in-out, background-color 0.5s ease;
       border-radius: 3px;
     }
     .gauge-ticks {
@@ -285,6 +285,53 @@
       font-size: 10px;
       color: var(--text-tertiary);
       font-family: var(--font-mono);
+    }
+
+    /* Score change flash animation */
+    @keyframes scoreFlash {
+      0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+      70%  { box-shadow: 0 0 20px 10px rgba(255,255,255,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+    }
+    .score-flash { animation: scoreFlash 0.8s ease-out; }
+
+    /* Prominent Pill Buttons for Demo & Fixture */
+    .btn-pill {
+      padding: 8px 18px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-strong);
+      transition: all 160ms ease;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+    }
+    .btn-pill-primary {
+      background: rgba(56,189,248,0.22);
+      border-color: var(--accent-blue);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(56,189,248,0.3);
+    }
+    .btn-pill-primary:hover {
+      background: rgba(56,189,248,0.38);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(56,189,248,0.5);
+    }
+    .btn-pill-clear {
+      background: rgba(16,185,129,0.22);
+      border-color: var(--clear);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(16,185,129,0.3);
+    }
+    .btn-pill-clear:hover {
+      background: rgba(16,185,129,0.38);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(16,185,129,0.5);
     }
 
     /* Audit Table */
@@ -330,6 +377,32 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Provenance Tooltip (Enhancement 8) */
+    .relative { position: relative; }
+    .inline-block { display: inline-block; }
+    .hidden { display: none !important; }
+    .provenance-tooltip {
+      position: absolute;
+      z-index: 100;
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #cbd5e1;
+      width: 250px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6);
+      bottom: calc(100% + 6px);
+      right: 0;
+      line-height: 1.4;
+      text-align: left;
+    }
+    .text-amber-400 { color: #fbbf24; }
+    .text-green-400 { color: #34d399; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-500 { color: #64748b; }
+    .text-xs { font-size: 11px; }
 
     /* Empty Canvas Pattern */
     .empty-canvas {
@@ -402,14 +475,21 @@
 
     <!-- Terminal key action cluster -->
     <div style="display: flex; align-items: center; gap: 8px;">
+      <div id="live-indicator" class="inline-flex items-center gap-1" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; padding: 5px 10px; background: var(--bg-inset); border-radius: 4px; border: 1px solid var(--border-hairline);">
+        <span id="live-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+        <span id="live-label" class="text-xs text-slate-400 mono" style="font-size: 11px; color: var(--text-secondary);">LIVE</span>
+      </div>
       <a href="capture.html" class="btn-terminal" title="Launch Edge Capture Client">
         <span>[CAPTURE CLIENT]</span>
       </a>
       <button id="btnRepoll" class="btn-terminal" onclick="handleRepoll()">
         <span>[RE-POLL BACKEND]</span>
       </button>
-      <button id="btnLoadFixture" class="btn-terminal" onclick="handleLoadFixture()">
-        <span>[LOAD SAMPLE FIXTURE]</span>
+      <button id="btnLoadFixture" class="btn-pill btn-pill-primary" onclick="handleLoadFixture()">
+        <span>[LOAD FIXTURE]</span>
+      </button>
+      <button id="btnDemoClear" class="btn-pill btn-pill-clear" onclick="handleDemoClear()">
+        <span>[DEMO: CLEAR]</span>
       </button>
     </div>
   </header>
@@ -423,7 +503,7 @@
     <div style="display: flex; flex-direction: column; gap: 16px;">
       
       <!-- FUSED VERDICT CARD -->
-      <section class="panel stagger-in" style="animation-delay: 40ms;" id="panelVerdict">
+      <section class="panel stagger-in" style="animation-delay: 40ms;" id="score-panel" data-id="panelVerdict">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span class="eyebrow">FUSED VERDICT</span>
           <span id="tierBadge" class="badge">--</span>
@@ -497,10 +577,39 @@
     <!-- ========================================================= -->
     <div class="matrix-grid">
 
+      <!-- WATCHLIST PANEL — Sanctions & Identity Watchlist (Enhancement 7) -->
+      <section class="panel stagger-in" id="panelWatchlist" style="animation-delay: 100ms; grid-column: span 2;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">WATCHLIST // SANCTIONS & IDENTITY CHECK</span>
+            <span id="wlProvenanceBtn"></span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="wlSeverityBadge" class="badge badge-hard-neutral">HARD</span>
+            <span id="wlStatusBadge" class="badge">--</span>
+          </div>
+        </div>
+        <div style="margin: 6px 0 8px 0; display: flex; justify-content: space-between; align-items: baseline;">
+          <div>
+            <div id="wlLabel" class="mono" style="font-size: 15px; font-weight: 600; color: var(--text-primary);">
+              Not on watchlist
+            </div>
+            <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 2px;">
+              Sanctions database & high-risk identity registry
+            </div>
+          </div>
+          <div id="wlConfidence" class="mono" style="font-size: 12px; color: var(--text-secondary);">CONF: 0%</div>
+        </div>
+        <p id="watchlistExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 6px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;">Subject not found in watchlist database.</p>
+      </section>
+
       <!-- PANEL A — ELA Forensic Heatmap -->
       <section class="panel stagger-in" style="animation-delay: 120ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="eyebrow">PANEL A // ELA FORENSIC HEATMAP</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL A // ELA FORENSIC HEATMAP</span>
+            <span id="elaProvenanceBtn"></span>
+          </div>
           <span id="elaStatusBadge" class="badge">--</span>
         </div>
         <div id="elaContainer" class="crosshair-grid" style="position: relative; width: 100%; height: 140px; border-radius: 4px; overflow: hidden; background: var(--bg-inset); border: 1px solid var(--border-hairline); display: flex; align-items: center; justify-content: center;">
@@ -510,12 +619,16 @@
           <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">JPEG recompression surface scan</span>
           <span id="elaConfidence" class="mono" style="font-size: 11px; color: var(--text-secondary);">--</span>
         </div>
+        <p id="elaExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
 
       <!-- PANEL B — GenAI Doc Heatmap -->
       <section class="panel stagger-in" style="animation-delay: 160ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-          <span class="eyebrow">PANEL B // GENAI DOC HEATMAP</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL B // GENAI DOC HEATMAP</span>
+            <span id="genaiProvenanceBtn"></span>
+          </div>
           <span id="genaiStatusBadge" class="badge">--</span>
         </div>
         <div id="genaiContainer" class="crosshair-grid" style="position: relative; width: 100%; height: 140px; border-radius: 4px; overflow: hidden; background: var(--bg-inset); border: 1px solid var(--border-hairline); display: flex; align-items: center; justify-content: center;">
@@ -525,12 +638,16 @@
           <span id="genaiMeta" class="mono" style="font-size: 11px; color: var(--text-tertiary);">method: fft_heuristic</span>
           <span id="genaiConfidence" class="mono" style="font-size: 11px; color: var(--text-secondary);">--</span>
         </div>
+        <p id="genaiExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
 
       <!-- PANEL C — Face Deepfake Engine -->
       <section class="panel stagger-in" style="animation-delay: 200ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span class="eyebrow">PANEL C // FACE DEEPFAKE ENGINE</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL C // FACE DEEPFAKE ENGINE</span>
+            <span id="dfProvenanceBtn"></span>
+          </div>
           <span id="dfSeverityBadge" class="badge">HARD</span>
         </div>
 
@@ -557,12 +674,16 @@
           <span id="dfMode" class="mono" style="font-size: 11px; color: var(--text-tertiary);">mode: per_frame_aggregate</span>
           <span id="dfStatusBadge" class="badge">--</span>
         </div>
+        <p id="dfExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
 
       <!-- PANEL D — Active Liveness Challenge -->
       <section class="panel stagger-in" style="animation-delay: 240ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span class="eyebrow">PANEL D // ACTIVE LIVENESS CHALLENGE</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL D // ACTIVE LIVENESS CHALLENGE</span>
+            <span id="livenessProvenanceBtn"></span>
+          </div>
           <span id="livenessSeverityBadge" class="badge">SOFT</span>
         </div>
 
@@ -582,12 +703,16 @@
           <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">CHALLENGE-RESPONSE VERIFIED</span>
           <span id="livenessConfidence" class="mono" style="font-size: 11px; color: var(--text-secondary);">--</span>
         </div>
+        <p id="livenessExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
 
       <!-- PANEL E — Voice Biometrics & Spoof -->
       <section class="panel stagger-in" style="animation-delay: 280ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span class="eyebrow">PANEL E // VOICE BIOMETRICS & SPOOF</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL E // VOICE BIOMETRICS & SPOOF</span>
+            <span id="voiceProvenanceBtn"></span>
+          </div>
           <!-- Voice spoof in fixture is HARD severity but NOT triggered -> MUST render green/clear -->
           <span id="voiceStatusBadge" class="badge">--</span>
         </div>
@@ -608,12 +733,16 @@
           <span id="voiceMethod" class="mono" style="font-size: 11px; color: var(--text-tertiary);">method: mfcc_heuristic</span>
           <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">AASIST / SPECTRAL</span>
         </div>
+        <p id="voiceExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
 
       <!-- PANEL F — Cross-Modal Identity Alignment -->
       <section class="panel stagger-in" style="animation-delay: 320ms;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span class="eyebrow">PANEL F // CROSS-MODAL ALIGNMENT</span>
+          <div style="display: flex; align-items: center;">
+            <span class="eyebrow">PANEL F // CROSS-MODAL ALIGNMENT</span>
+            <span id="nameProvenanceBtn"></span>
+          </div>
           <span id="nameMatchStatusBadge" class="badge">--</span>
         </div>
 
@@ -634,7 +763,9 @@
             <span id="nameRatio" class="mono" style="font-size: 12px; font-weight: 600; color: var(--text-primary);">--</span>
           </div>
         </div>
+        <p id="nameExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
+
 
     </div>
 
@@ -661,12 +792,13 @@
     const EMBEDDED_SAMPLE = {
       "existing": {},
       "lines": [
-        { "signal": "ela", "penalty": 4.0, "label": "No recompression anomaly", "confidence": 0.12, "severity": "soft", "triggered": false, "evidence": {} },
-        { "signal": "genai_doc", "penalty": 3.75, "label": "Document appears genuine", "confidence": 0.15, "severity": "soft", "triggered": false, "evidence": { "heatmap_path": "/static/hm_genai_demo.png", "method": "fft_heuristic" } },
-        { "signal": "face_deepfake", "penalty": 25.0, "label": "Deepfake artifacts detected", "confidence": 0.91, "severity": "hard", "triggered": true, "evidence": { "mode": "per_frame_aggregate", "per_frame_scores": [0.88, 0.92, 0.95, 0.71, 0.85] } },
-        { "signal": "active_liveness", "penalty": 0.0, "label": "Liveness action confirmed: turn_left", "confidence": 0.08, "severity": "soft", "triggered": false, "evidence": { "expected_action": "turn_left", "detected": true } },
-        { "signal": "name_match", "penalty": 0.0, "label": "Spoken name matches document", "confidence": 0.05, "severity": "soft", "triggered": false, "evidence": { "transcript": "priya sharma 2026-09-11 4471", "name_ratio": 0.98, "nonce_present": true, "date_present": true } },
-        { "signal": "voice_spoof", "penalty": 0.0, "label": "Voice appears genuine", "confidence": 0.18, "severity": "hard", "triggered": false, "evidence": { "method": "mfcc_heuristic" } }
+        { "signal": "watchlist", "penalty": 0.0, "label": "Not on watchlist", "confidence": 0.0, "severity": "hard", "triggered": false, "evidence": {}, "explanation": "Subject not found in watchlist database.", "model_provenance": { "model": "Exact hash match against sanctions list", "is_fallback": false, "calibration": "threshold", "samples": "N/A" } },
+        { "signal": "ela", "penalty": 4.0, "label": "No recompression anomaly", "confidence": 0.12, "severity": "soft", "triggered": false, "evidence": {}, "explanation": "ELA forensics: No JPEG recompression anomalies detected.", "model_provenance": { "model": "PIL EXIF tag inspection", "is_fallback": false, "calibration": "rule-based", "samples": "N/A" } },
+        { "signal": "genai_doc", "penalty": 3.75, "label": "Document appears genuine", "confidence": 0.15, "severity": "soft", "triggered": false, "evidence": { "heatmap_path": "/static/hm_genai_demo.png", "method": "fft_heuristic" }, "explanation": "Document scored 15% AI-generation probability via fft_heuristic. Spectrum consistent with camera-captured document.", "model_provenance": { "model": "Radial FFT spectrum heuristic", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_docs vs genai_docs dataset" } },
+        { "signal": "face_deepfake", "penalty": 25.0, "label": "Deepfake artifacts detected", "confidence": 0.91, "severity": "hard", "triggered": true, "evidence": { "mode": "per_frame_aggregate", "per_frame_scores": [0.88, 0.92, 0.95, 0.71, 0.85] }, "explanation": "Analysed 5 video frames using per-frame aggregate. Deepfake artifacts detected in top frames (scores: [0.88, 0.92, 0.95]).", "model_provenance": { "model": "Laplacian variance + temporal consistency", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_faces vs deepfake_faces dataset" } },
+        { "signal": "active_liveness", "penalty": 0.0, "label": "Liveness action confirmed: turn_left", "confidence": 0.08, "severity": "soft", "triggered": false, "evidence": { "expected_action": "turn_left", "detected": true }, "explanation": "Challenge action: turn_left. Action confirmed — live person present.", "model_provenance": { "model": "MediaPipe FaceMesh (468 landmarks)", "is_fallback": false, "calibration": "Deterministic geometric ratio", "samples": "N/A — threshold calibrated on action_yaw/pitch" } },
+        { "signal": "name_match", "penalty": 0.0, "label": "Spoken name matches document", "confidence": 0.05, "severity": "soft", "triggered": false, "evidence": { "transcript": "priya sharma 2026-09-11 4471", "name_ratio": 0.98, "nonce_present": true, "date_present": true }, "explanation": "Transcript: \"priya sharma 2026-09-11 4471\" | Name similarity: 98%. Nonce ✓ Date ✓. Name matches document.", "model_provenance": { "model": "Vosk ASR + RapidFuzz token_set_ratio", "is_fallback": false, "calibration": "Deterministic ratio (threshold 0.75)", "samples": "cross-modal checked against OCR name" } },
+        { "signal": "voice_spoof", "penalty": 0.0, "label": "Voice appears genuine", "confidence": 0.18, "severity": "hard", "triggered": false, "evidence": { "method": "mfcc_heuristic" }, "explanation": "Voice analysis via mfcc_heuristic. Voice spectral profile consistent with genuine speech.", "model_provenance": { "model": "Spectral flatness + energy heuristic", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_audio vs spoofed_audio dataset" } }
       ],
       "final": { "score": 82.0, "tier": "flagged", "floors_applied": ["face_deepfake"] },
       "summary": "Officer summary: Deepfake face artifacts detected with high confidence (0.91). Anti-dilution floor applied. All other signals clear. Final verdict: FLAGGED."
@@ -690,12 +822,45 @@
       return EMBEDDED_SAMPLE;
     }
 
+    const CLEAR_SAMPLE = {
+      "existing": {},
+      "lines": [
+        { "signal": "watchlist", "penalty": 0.0, "label": "Not on watchlist", "confidence": 0.0, "severity": "hard", "triggered": false, "evidence": {}, "explanation": "Subject not found in watchlist database.", "model_provenance": { "model": "Exact hash match against sanctions list", "is_fallback": false, "calibration": "threshold", "samples": "N/A" } },
+        { "signal": "ela", "penalty": 0.0, "label": "No recompression anomaly", "confidence": 0.04, "severity": "soft", "triggered": false, "evidence": {}, "explanation": "ELA forensics: No JPEG recompression anomalies detected.", "model_provenance": { "model": "PIL EXIF tag inspection", "is_fallback": false, "calibration": "rule-based", "samples": "N/A" } },
+        { "signal": "genai_doc", "penalty": 0.0, "label": "Document appears genuine", "confidence": 0.08, "severity": "soft", "triggered": false, "evidence": { "method": "fft_heuristic" }, "explanation": "Document scored 8% AI-generation probability via fft_heuristic. Spectrum consistent with camera-captured document.", "model_provenance": { "model": "Radial FFT spectrum heuristic", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_docs vs genai_docs dataset" } },
+        { "signal": "face_deepfake", "penalty": 0.0, "label": "No deepfake artifacts", "confidence": 0.12, "severity": "hard", "triggered": false, "evidence": { "mode": "per_frame_aggregate", "per_frame_scores": [0.10, 0.14, 0.09, 0.11, 0.13] }, "explanation": "Analysed 5 video frames using per-frame aggregate. No deepfake artifacts detected across sampled frames.", "model_provenance": { "model": "Laplacian variance + temporal consistency", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_faces vs deepfake_faces dataset" } },
+        { "signal": "active_liveness", "penalty": 0.0, "label": "Liveness action confirmed: turn_left", "confidence": 0.05, "severity": "soft", "triggered": false, "evidence": { "expected_action": "turn_left", "detected": true }, "explanation": "Challenge action: turn_left. Action confirmed — live person present.", "model_provenance": { "model": "MediaPipe FaceMesh (468 landmarks)", "is_fallback": false, "calibration": "Deterministic geometric ratio", "samples": "N/A — threshold calibrated on action_yaw/pitch" } },
+        { "signal": "name_match", "penalty": 0.0, "label": "Spoken name matches document", "confidence": 0.02, "severity": "soft", "triggered": false, "evidence": { "transcript": "priya sharma 2026-09-11 4471", "name_ratio": 1.0, "nonce_present": true, "date_present": true }, "explanation": "Transcript: \"priya sharma 2026-09-11 4471\" | Name similarity: 100%. Nonce ✓ Date ✓. Name matches document.", "model_provenance": { "model": "Vosk ASR + RapidFuzz token_set_ratio", "is_fallback": false, "calibration": "Deterministic ratio (threshold 0.75)", "samples": "cross-modal checked against OCR name" } },
+        { "signal": "voice_spoof", "penalty": 0.0, "label": "Voice appears genuine", "confidence": 0.06, "severity": "hard", "triggered": false, "evidence": { "method": "mfcc_heuristic" }, "explanation": "Voice analysis via mfcc_heuristic. Voice spectral profile consistent with genuine speech.", "model_provenance": { "model": "Spectral flatness + energy heuristic", "is_fallback": true, "calibration": "Platt scaling (LogisticRegression)", "samples": "fit on real_audio vs spoofed_audio dataset" } }
+      ],
+      "final": { "score": 12.0, "tier": "clear", "floors_applied": [] },
+      "summary": "Officer summary: All biometric, voice, and document channels verified clear. Risk score: 12. Verdict: CLEAR."
+    };
+
+    function setLiveIndicator(isLive) {
+      const dot = document.getElementById("live-dot");
+      const label = document.getElementById("live-label");
+      if (dot) {
+        dot.style.background = isLive ? "#22c55e" : "#64748b";
+        if (isLive) {
+          dot.style.animation = "pulse 2.4s ease-in-out infinite";
+        } else {
+          dot.style.animation = "none";
+        }
+      }
+      if (label) {
+        label.innerText = isLive ? "LIVE" : "FIXTURE";
+      }
+    }
+
     async function handleRepoll() {
+      setLiveIndicator(true);
       const data = await loadData();
       render(data);
     }
 
     async function handleLoadFixture() {
+      setLiveIndicator(false);
       try {
         const res = await fetch("verify_sample.json");
         if (res.ok) {
@@ -705,6 +870,11 @@
         }
       } catch (e) {}
       render(EMBEDDED_SAMPLE);
+    }
+
+    function handleDemoClear() {
+      setLiveIndicator(false);
+      render(CLEAR_SAMPLE);
     }
 
     /**
@@ -773,6 +943,38 @@
       `;
     }
 
+    function buildProvenanceTooltip(prov) {
+      if (!prov) return '';
+      const fallbackBadge = prov.is_fallback
+        ? '<span class="text-amber-400 text-xs">[FALLBACK]</span>'
+        : '<span class="text-green-400 text-xs">[PRIMARY]</span>';
+      return `
+        <div class="provenance-tooltip hidden absolute z-50 bg-slate-800 border
+                    border-slate-600 rounded-lg p-3 text-xs text-slate-300
+                    w-64 shadow-xl bottom-8 right-0">
+          <div class="font-semibold mb-1" style="font-weight: 600; margin-bottom: 4px; color: #fff;">Model Provenance ${fallbackBadge}</div>
+          <div><span class="text-slate-500">Model:</span> ${prov.model || 'unknown'}</div>
+          <div><span class="text-slate-500">Calibration:</span> ${prov.calibration || 'unknown'}</div>
+          <div><span class="text-slate-500">Training:</span> ${prov.samples || 'unknown'}</div>
+        </div>
+      `;
+    }
+
+    function createProvenanceBtn(prov) {
+      if (!prov) return '';
+      return `
+        <div class="relative inline-block ml-2" style="position: relative; display: inline-block; margin-left: 6px;">
+          <button class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"
+                  style="background: none; border: 1px solid var(--border-hairline); border-radius: 50%; width: 16px; height: 16px; line-height: 14px; text-align: center; color: var(--text-tertiary); cursor: pointer; font-size: 10px;"
+                  onclick="this.nextElementSibling.classList.toggle('hidden')">?</button>
+          ${buildProvenanceTooltip(prov)}
+        </div>
+      `;
+    }
+
+    // Track last score for change detection & flash animation
+    let _lastScore = null;
+
     /**
      * Single render(data) entry point
      */
@@ -782,6 +984,19 @@
       const final = data.final || {};
       const lines = data.lines || [];
       const summary = data.summary || "";
+      const newScore = final.score !== undefined ? Number(final.score) : null;
+
+      if (_lastScore !== null && newScore !== _lastScore) {
+        // Score changed — flash the panel
+        const panel = document.getElementById('score-panel') || document.getElementById('panelVerdict');
+        if (panel) {
+          panel.classList.remove('score-flash');
+          void panel.offsetWidth; // force reflow
+          panel.classList.add('score-flash');
+        }
+      }
+      _lastScore = newScore;
+
       const score = Number(final.score || 0);
       const tier = String(final.tier || "clear").toLowerCase();
       const tierColor = getTierColor(tier);
@@ -798,15 +1013,10 @@
       const tierLabel = document.getElementById("tierLabel");
       tierLabel.innerText = `TIER: ${tier.toUpperCase()}`;
 
-      // Score bar with 900ms transition starting from 0
+      // Score bar with 0.8s smooth transition
       const gaugeFill = document.getElementById("gaugeFill");
       gaugeFill.style.backgroundColor = tierColor;
-      gaugeFill.style.width = "0%";
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          gaugeFill.style.width = Math.min(Math.max(score, 0), 100) + "%";
-        }, 50);
-      });
+      gaugeFill.style.width = Math.min(Math.max(score, 0), 100) + "%";
 
       // Anti-dilution floors
       const floorsList = document.getElementById("floorsList");
@@ -833,18 +1043,22 @@
       lines.forEach(line => {
         const confPct = Math.round((Number(line.confidence) || 0) * 100);
         const penaltyVal = Number(line.penalty || 0).toFixed(1);
-        const isHard = String(line.severity || "").toLowerCase() === "hard";
+        const isWatchlist = line.signal === 'watchlist';
+        const showHardBadge = line.severity === 'hard';
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>
-            <div class="mono" style="font-weight: 600; color: var(--text-primary);">${line.signal}</div>
+            <div style="display: flex; align-items: center;">
+              <span class="mono" style="font-weight: 600; color: var(--text-primary);">${line.signal}</span>
+              ${createProvenanceBtn(line.model_provenance)}
+            </div>
             <div style="font-size: 11px; color: var(--text-tertiary); max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${line.label || ""}</div>
           </td>
           <td class="mono" style="text-align: right; color: var(--text-primary); font-weight: 500;">${confPct}%</td>
           <td class="mono" style="text-align: right; color: ${penaltyVal > 0 ? 'var(--review)' : 'var(--text-tertiary)'}; font-weight: 500;">+${penaltyVal}</td>
           <td style="text-align: center;">
-            <span class="badge ${isHard ? 'badge-hard-neutral' : ''}" style="${!isHard ? 'color: var(--text-tertiary);' : ''}">${line.severity.toUpperCase()}</span>
+            <span class="badge ${showHardBadge ? 'badge-hard-neutral' : ''}" style="${!showHardBadge ? 'color: var(--text-tertiary);' : ''}">${line.severity.toUpperCase()}</span>
           </td>
           <td style="text-align: center;">${getSignalBadge(line)}</td>
         `;
@@ -855,14 +1069,40 @@
       const sigMap = {};
       lines.forEach(l => { sigMap[l.signal] = l; });
 
+      // PANEL WATCHLIST (Enhancement 7 & 8)
+      const wlSig = sigMap["watchlist"];
+      const wlLabel = document.getElementById("wlLabel");
+      const wlStatusBadge = document.getElementById("wlStatusBadge");
+      const wlSeverityBadge = document.getElementById("wlSeverityBadge");
+      const wlConfidence = document.getElementById("wlConfidence");
+      const wlExp = document.getElementById("watchlistExplanation");
+      const wlProvBtn = document.getElementById("wlProvenanceBtn");
+      if (wlSig) {
+        if (wlLabel) wlLabel.innerText = wlSig.label || "Not on watchlist";
+        if (wlConfidence) wlConfidence.innerText = `CONF: ${(Number(wlSig.confidence || 0) * 100).toFixed(0)}%`;
+        if (wlExp) wlExp.textContent = wlSig.explanation || "Subject not found in watchlist database.";
+        if (wlStatusBadge) wlStatusBadge.outerHTML = `<span id="wlStatusBadge">${getSignalBadge(wlSig)}</span>`;
+        if (wlSeverityBadge) {
+          wlSeverityBadge.className = `badge ${wlSig.severity === 'hard' ? (wlSig.triggered ? 'badge-flagged' : 'badge-hard-neutral') : ''}`;
+        }
+        if (wlProvBtn) wlProvBtn.innerHTML = createProvenanceBtn(wlSig.model_provenance);
+      } else {
+        if (wlExp) wlExp.textContent = "";
+      }
+
+
       // PANEL A — ELA
       const elaSig = sigMap["ela"];
       const elaContainer = document.getElementById("elaContainer");
       const elaStatusBadge = document.getElementById("elaStatusBadge");
       const elaConfidence = document.getElementById("elaConfidence");
+      const elaExp = document.getElementById("elaExplanation");
+      const elaProvBtn = document.getElementById("elaProvenanceBtn");
+      if (elaProvBtn) elaProvBtn.innerHTML = createProvenanceBtn(elaSig ? elaSig.model_provenance : null);
       if (elaSig) {
         elaStatusBadge.outerHTML = `<span id="elaStatusBadge">${getSignalBadge(elaSig)}</span>`;
         elaConfidence.innerText = `CONF: ${(Number(elaSig.confidence || 0) * 100).toFixed(0)}%`;
+        if (elaExp) elaExp.textContent = elaSig.explanation || "";
         if (elaSig.evidence && elaSig.evidence.heatmap_path) {
           elaContainer.innerHTML = `<img src="${elaSig.evidence.heatmap_path}" alt="ELA Heatmap" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.outerHTML='<div class=\\'empty-canvas\\'>NO HEATMAP AVAILABLE</div>';">`;
         } else {
@@ -870,6 +1110,7 @@
         }
       } else {
         elaContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
+        if (elaExp) elaExp.textContent = "";
       }
 
       // PANEL B — GenAI Doc
@@ -878,9 +1119,13 @@
       const genaiStatusBadge = document.getElementById("genaiStatusBadge");
       const genaiConfidence = document.getElementById("genaiConfidence");
       const genaiMeta = document.getElementById("genaiMeta");
+      const genaiExp = document.getElementById("genaiExplanation");
+      const genaiProvBtn = document.getElementById("genaiProvenanceBtn");
+      if (genaiProvBtn) genaiProvBtn.innerHTML = createProvenanceBtn(genaiSig ? genaiSig.model_provenance : null);
       if (genaiSig) {
         genaiStatusBadge.outerHTML = `<span id="genaiStatusBadge">${getSignalBadge(genaiSig)}</span>`;
         genaiConfidence.innerText = `CONF: ${(Number(genaiSig.confidence || 0) * 100).toFixed(0)}%`;
+        if (genaiExp) genaiExp.textContent = genaiSig.explanation || "";
         if (genaiSig.evidence && genaiSig.evidence.method) {
           genaiMeta.innerText = `method: ${genaiSig.evidence.method}`;
         }
@@ -893,6 +1138,7 @@
         }
       } else {
         genaiContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
+        if (genaiExp) genaiExp.textContent = "";
       }
 
       // PANEL C — Face Deepfake
@@ -902,17 +1148,23 @@
       const dfMode = document.getElementById("dfMode");
       const dfStatusBadge = document.getElementById("dfStatusBadge");
       const sparklineContainer = document.getElementById("sparklineContainer");
+      const dfExp = document.getElementById("dfExplanation");
+      const dfProvBtn = document.getElementById("dfProvenanceBtn");
+      if (dfProvBtn) dfProvBtn.innerHTML = createProvenanceBtn(dfSig ? dfSig.model_provenance : null);
       if (dfSig) {
         const confVal = (Number(dfSig.confidence || 0) * 100).toFixed(0);
         dfConfDisplay.innerText = `${confVal}%`;
         dfConfDisplay.style.color = dfSig.triggered ? "var(--flagged)" : "var(--clear)";
         dfLabel.innerText = dfSig.label || "Artifacts evaluated";
+        if (dfExp) dfExp.textContent = dfSig.explanation || "";
         if (dfSig.evidence && dfSig.evidence.mode) {
           dfMode.innerText = `mode: ${dfSig.evidence.mode}`;
         }
         dfStatusBadge.outerHTML = `<span id="dfStatusBadge">${getSignalBadge(dfSig)}</span>`;
         const scores = (dfSig.evidence && dfSig.evidence.per_frame_scores) ? dfSig.evidence.per_frame_scores : [];
         sparklineContainer.innerHTML = generateSparklineSvg(scores);
+      } else {
+        if (dfExp) dfExp.textContent = "";
       }
 
       // PANEL D — Active Liveness
@@ -921,11 +1173,15 @@
       const livenessLabel = document.getElementById("livenessLabel");
       const livenessConfidence = document.getElementById("livenessConfidence");
       const livenessCheckmark = document.getElementById("livenessCheckmark");
+      const livExp = document.getElementById("livenessExplanation");
+      const livProvBtn = document.getElementById("livenessProvenanceBtn");
+      if (livProvBtn) livProvBtn.innerHTML = createProvenanceBtn(livSig ? livSig.model_provenance : null);
       if (livSig) {
         const ev = livSig.evidence || {};
         livenessAction.innerText = ev.expected_action || "turn_left";
         livenessLabel.innerText = livSig.label || "Liveness action confirmed";
         livenessConfidence.innerText = `CONF: ${(Number(livSig.confidence || 0) * 100).toFixed(0)}%`;
+        if (livExp) livExp.textContent = livSig.explanation || "";
         if (ev.detected !== false) {
           livenessCheckmark.innerText = "✓";
           livenessCheckmark.style.color = "var(--clear)";
@@ -933,6 +1189,8 @@
           livenessCheckmark.innerText = "✕";
           livenessCheckmark.style.color = "var(--flagged)";
         }
+      } else {
+        if (livExp) livExp.textContent = "";
       }
 
       // PANEL E — Voice Biometrics & Spoof
@@ -942,14 +1200,20 @@
       const voiceLabel = document.getElementById("voiceLabel");
       const voiceStatusBadge = document.getElementById("voiceStatusBadge");
       const voiceMethod = document.getElementById("voiceMethod");
+      const voiceExp = document.getElementById("voiceExplanation");
+      const voiceProvBtn = document.getElementById("voiceProvenanceBtn");
+      if (voiceProvBtn) voiceProvBtn.innerHTML = createProvenanceBtn(vsSig ? vsSig.model_provenance : null);
       if (vsSig) {
         voiceConfidence.innerText = `${(Number(vsSig.confidence || 0) * 100).toFixed(0)}%`;
         voiceLabel.innerText = vsSig.label || "Voice appears genuine";
+        if (voiceExp) voiceExp.textContent = vsSig.explanation || "";
         if (vsSig.evidence && vsSig.evidence.method) {
           voiceMethod.innerText = `method: ${vsSig.evidence.method}`;
         }
         // Section 3 rule: triggered == false is always --clear badge regardless of severity
         voiceStatusBadge.outerHTML = `<span id="voiceStatusBadge">${getSignalBadge(vsSig)}</span>`;
+      } else {
+        if (voiceExp) voiceExp.textContent = "";
       }
 
       // PANEL F — Cross-Modal Identity Alignment
@@ -959,14 +1223,20 @@
       const nameMatchStatusBadge = document.getElementById("nameMatchStatusBadge");
       const tagNonce = document.getElementById("tagNonce");
       const tagDate = document.getElementById("tagDate");
+      const nameExp = document.getElementById("nameExplanation");
+      const nameProvBtn = document.getElementById("nameProvenanceBtn");
+      if (nameProvBtn) nameProvBtn.innerHTML = createProvenanceBtn(nmSig ? nmSig.model_provenance : null);
       if (nmSig) {
         const ev = nmSig.evidence || {};
         nameTranscript.innerText = ev.transcript || "priya sharma 2026-09-11 4471";
         const ratio = ev.name_ratio !== undefined ? (ev.name_ratio * 100).toFixed(0) : "98";
         nameRatio.innerText = `${ratio}%`;
+        if (nameExp) nameExp.textContent = nmSig.explanation || "";
         nameMatchStatusBadge.outerHTML = `<span id="nameMatchStatusBadge">${getSignalBadge(nmSig)}</span>`;
         tagNonce.style.color = ev.nonce_present !== false ? "var(--clear)" : "var(--text-tertiary)";
         tagDate.style.color = ev.date_present !== false ? "var(--clear)" : "var(--text-tertiary)";
+      } else {
+        if (nameExp) nameExp.textContent = "";
       }
 
       // 2.4 Officer Summary & Decision Trail
@@ -989,3 +1259,4 @@
 </body>
 </html>
 <!-- DASHBOARD OK -->
+<!-- ANIMATION OK -->
