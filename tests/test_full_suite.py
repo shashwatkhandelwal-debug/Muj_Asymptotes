@@ -330,6 +330,36 @@ def test_calibration_monotone(backup_calibration):
     assert cal_high > cal_low
 
 
+def test_calibration_signals_direction_positive():
+    """
+    Asserts sign and direction correctness for all core detector calibrations.
+    Ensures that for every signal (genai_doc, face_deepfake, voice_spoof):
+      1. The fitted Platt scaling coefficient is strictly positive (coef > 0).
+      2. Calibration confidence is strictly increasing with raw score:
+         apply_calibration(0.85) > apply_calibration(0.15), preventing inverted sigmoids.
+    """
+    calib_path = Path("calibration.json")
+    assert calib_path.exists(), "calibration.json must exist"
+    with open(calib_path, "r", encoding="utf-8") as f:
+        calibs = json.load(f)
+
+    signals_to_verify = ["genai_doc", "face_deepfake", "voice_spoof"]
+    for sig in signals_to_verify:
+        assert sig in calibs, f"Signal {sig} missing from calibration.json"
+        entry = calibs[sig]
+        assert "coef" in entry, f"Signal {sig} missing 'coef'"
+        coef = entry["coef"]
+        assert coef > 0, f"Signal {sig} has negative or zero coef: {coef} (must be positive to prevent inverted sigmoid)"
+
+        # Assert monotonic increase: higher raw score MUST produce higher calibrated confidence
+        cal_high = apply_calibration(0.85, sig)
+        cal_low = apply_calibration(0.15, sig)
+        assert cal_high > cal_low, (
+            f"Signal {sig} failed monotonicity check: apply_calibration(0.85)={cal_high} "
+            f"not greater than apply_calibration(0.15)={cal_low}"
+        )
+
+
 def test_calibration_threshold_fallback(backup_calibration):
     fit_calibrator([0.5, 0.6], [1, 0], "tiny_pytest")
     cal = apply_calibration(0.9, "tiny_pytest")

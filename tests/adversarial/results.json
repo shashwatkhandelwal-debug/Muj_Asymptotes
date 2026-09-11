@@ -10,17 +10,17 @@
   {
     "scenario": "uniform_noise_image",
     "triggered": true,
-    "raw_score": 1.0,
+    "raw_score": 0.8500000000000001,
     "expected_behaviour": "High frequency noise detected as synthetic/genai",
     "actual_behaviour": "Document appears AI-generated",
     "passed": true
   },
   {
     "scenario": "silent_audio",
-    "triggered": true,
-    "raw_score": 0.9933071966261541,
+    "triggered": false,
+    "raw_score": 0.006692827149026526,
     "expected_behaviour": "Baseline score on silent input",
-    "actual_behaviour": "Synthetic/TTS voice detected",
+    "actual_behaviour": "Voice appears genuine",
     "passed": true
   },
   {

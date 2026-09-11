@@ -57,6 +57,16 @@ def _load_audio_signal(path: str):
     except Exception:
         pass
 
+    # Try soundfile
+    try:
+        import soundfile as sf
+        data, sr = sf.read(path)
+        if data.ndim > 1:
+            data = data.mean(axis=1)
+        return data.astype(np.float32), sr
+    except Exception:
+        pass
+
     # Try PyAV
     try:
         import av
@@ -206,7 +216,10 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
         ez = np.exp(z)
         score = ez / (1.0 + ez)
 
-    raw_score = float(np.clip(score, 0.0, 1.0))
+    # Invert genuineness score into spoof-likelihood P(synthetic voice) in [0, 1]
+    # so raw_score consistently represents spoof likelihood across both training and inference.
+    prob_spoof = 1.0 - score
+    raw_score = float(np.clip(prob_spoof, 0.0, 1.0))
     confidence = apply_calibration(raw_score, "voice_spoof")
     triggered = bool(raw_score > SIGNAL_TRIGGER[SignalId.VOICE_SPOOF])
     label = (

@@ -11,3 +11,9 @@ notebooks/*.ipynb_checkpoints
 
 # IDE agents
 .agents/
+
+# Virtual Environment
+.venv/
+
+# Runtime Audit DB
+audit.db
