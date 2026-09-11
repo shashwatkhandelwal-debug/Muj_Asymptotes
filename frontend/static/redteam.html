@@ -584,7 +584,7 @@
             const targetSigName = sc.target_signal || sc.target_detector || '';
             let primarySignal = signals.find(s => s.module === targetSigName || s.signal_name === targetSigName || s.signal === targetSigName);
             if (!primarySignal) {
-                primarySignal = [...signals].sort((a, b) => b.confidence - a.confidence)[0] || {
+                primarySignal = [...signals].sort((a, b) => (b.triggered ? 1 : 0) - (a.triggered ? 1 : 0) || b.confidence - a.confidence)[0] || {
                     module: 'None', signal_name: 'clean', confidence: 0.0, raw_score: 0.0, details: { status: 'Pristine' }
                 };
             }
@@ -594,22 +594,27 @@
             document.getElementById('narrative-detector-method').innerText = `Module: ${primarySignal.module || 'Pipeline'}`;
             document.getElementById('narrative-raw-score').innerText = `Raw: ${primarySignal.raw_score !== undefined ? Number(primarySignal.raw_score).toFixed(3) : '--'}`;
 
-            // Evidence key & detail
+            // Evidence key & detail - derived directly from real signal evaluation
+            const anyTriggered = signals.some(s => Boolean(s.triggered));
+            const isCleanScenario = (scenarioKey === 'clean_submission' || scenarioKey === 'clean_control');
+            
             let evidenceKey = 'Artifact Detected';
-            let evidenceDetail = JSON.stringify(primarySignal.details || {}, null, 2);
-            if (scenarioKey === 'clean_submission' || scenarioKey === 'clean_control' || finalTier === 'CLEAR') {
+            let evidenceDetail = '';
+
+            if (isCleanScenario && !anyTriggered) {
                 evidenceKey = 'Zero Anomalies Detected';
                 evidenceDetail = 'All spectral, biometric, and cryptographic checks passed with high confidence.';
-            } else if (scenarioKey === 'invalid_aadhaar' || scenarioKey === 'invalid_qr') {
-                evidenceKey = 'Verhoeff / Signature Failure';
-            } else if (scenarioKey === 'tampered_doc') {
-                evidenceKey = 'Software Tamper / ELA Discontinuity';
-            } else if (scenarioKey === 'face_deepfake' || scenarioKey === 'deepfake_face') {
-                evidenceKey = 'Boundary & Deepfake Inconsistencies';
-            } else if (scenarioKey === 'voice_spoof') {
-                evidenceKey = 'Synthetic Pitch / Phase Incoherence';
-            } else if (scenarioKey === 'genai_doc') {
-                evidenceKey = 'Diffusion / Spectral Fingerprint';
+            } else if (primarySignal.triggered || anyTriggered) {
+                const triggeredSig = primarySignal.triggered ? primarySignal : (signals.find(s => s.triggered) || primarySignal);
+                evidenceKey = triggeredSig.label || 'Anomalous Artifact Detected';
+                if (triggeredSig.details && Object.keys(triggeredSig.details).length > 0) {
+                    evidenceDetail = JSON.stringify(triggeredSig.details, null, 2);
+                } else {
+                    evidenceDetail = `Triggered on ${triggeredSig.signal || triggeredSig.module} with ${Math.round((triggeredSig.confidence || 0) * 100)}% confidence.`;
+                }
+            } else {
+                evidenceKey = primarySignal.label || 'Document / Biometric Evaluation Complete';
+                evidenceDetail = JSON.stringify(primarySignal.details || {}, null, 2);
             }
             document.getElementById('narrative-evidence-key').innerText = evidenceKey;
             document.getElementById('narrative-evidence-detail').innerText = evidenceDetail;
@@ -631,7 +636,7 @@
                 stepIdx++;
                 await sleep(300);
 
-                const isAnomalous = Boolean(sig.triggered || sig.confidence >= 0.5 || sig.raw_score >= 0.5);
+                const isAnomalous = Boolean(sig.triggered);
                 const sigName = sig.signal_name || sig.signal || sig.module;
                 const confPct = Math.round((sig.confidence || 0) * 100);
 

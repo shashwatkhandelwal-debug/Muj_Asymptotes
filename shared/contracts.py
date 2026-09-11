@@ -65,6 +65,7 @@ SIGNAL_TRIGGER: dict[SignalId, float] = {
 
 HARD_SIGNALS: set[SignalId] = {
     SignalId.FACE_DEEPFAKE,
+    SignalId.CROSSFIELD,
 }
 
 TIERS = [(0, 30, "clear"), (31, 69, "review"), (70, 100, "flagged")]

@@ -3,6 +3,7 @@
 <div align="center">
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![MediaPipe](https://img.shields.io/badge/MediaPipe-00A67E?style=for-the-badge&logo=google&logoColor=white)](https://mediapipe.dev/)
@@ -183,8 +184,46 @@ AEGIS-SENTINEL is engineered to comply with India's **Digital Personal Data Prot
 ---
 
 ## 7. Quickstart & Deployment
+ 
+### 7.1 Option A: Local Docker Deployment (Recommended — 100% On-Premise)
 
-### 7.1 Clone & Set Up Environment
+AEGIS-SENTINEL is fully containerized with zero external cloud dependencies, packaging all native system dependencies (`Tesseract OCR`, `OpenCV`, `PyZBar`, `FFmpeg`, `libsndfile`) in an isolated container.
+
+#### 1. One-Click Launch via Docker Compose
+```bash
+# Clone the repository
+git clone https://github.com/shashwatkhandelwal-debug/Muj_Asymptotes.git
+cd Muj_Asymptotes
+
+# Build and start the on-premise container
+docker compose up --build -d
+
+# View real-time container logs
+docker compose logs -f
+```
+
+#### 2. Or Build & Run Standalone Docker Container
+```bash
+# Build Docker image
+docker build -t aegis-sentinel:latest .
+
+# Run on port 8000 with persistent audit ledger
+docker run -d \
+  --name aegis_sentinel_core \
+  -p 8000:8000 \
+  -v $(pwd)/audit.db:/app/audit.db \
+  aegis-sentinel:latest
+```
+
+#### 3. Run Automated Tests Inside Docker
+```bash
+docker compose exec aegis-sentinel pytest tests/ -v
+```
+
+---
+
+### 7.2 Option B: Native Host Environment Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/shashwatkhandelwal-debug/Muj_Asymptotes.git
@@ -197,17 +236,18 @@ venv\Scripts\activate  # Windows
 
 # Install dependencies
 pip install -r requirements.txt
-```
 
-### 7.2 Launch Application Server
-```bash
+# Launch Application Server
 python -m uvicorn api.orchestrator:app --host 0.0.0.0 --port 8000 --reload
 ```
+
+---
 
 ### 7.3 Access Web Portals
 | Portal | Direct URL | Description |
 | :--- | :--- | :--- |
 | **Live KYC Verification** | `http://localhost:8000/index.html` | 4-Stage Onboarding (Doc OCR -> Dynamic Prompt -> Biometric Nonce -> Verdict) |
+| **Aadhaar Dual-Photo Flow** | `http://localhost:8000/upload.html` | Full Aadhaar card + close-up QR verification & cross-validation |
 | **Red-Team Attack Lab** | `http://localhost:8000/redteam.html` | 1-Click Adversarial Injection & Real-Time Bayesian Trust Decay |
 | **Auditor Telemetry Dashboard** | `http://localhost:8000/dashboard.html` | Forensic telemetry, ELA heatmaps, model provenance, and audit chain |
 | **Swagger API Documentation** | `http://localhost:8000/docs` | Interactive OpenAPI endpoints |

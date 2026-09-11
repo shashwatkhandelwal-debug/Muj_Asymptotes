@@ -1,0 +1,22 @@
+﻿services:
+  aegis-sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aegis-sentinel:latest
+    container_name: aegis_sentinel_core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+      - HOST=0.0.0.0
+    volumes:
+      - ./audit.db:/app/audit.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
