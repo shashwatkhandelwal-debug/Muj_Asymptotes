@@ -65,7 +65,7 @@ def main():
     created_files = []
     random.seed(42)
 
-    for i, name in enumerate(NAMES, start=1):
+    for i, name in enumerate(NAMES, start=0):
         slug = re.sub(r"[^\w]", "_", name.lower())
         nonce = f"{random.randint(0, 9999):04d}"
         date_str = "2026-09-11"
@@ -74,20 +74,24 @@ def main():
         temp_wav = out_dir / f"tmp_{i:02d}_{slug}.wav"
         final_wav = out_dir / f"{i:02d}_{slug}.wav"
 
-        engine.save_to_file(phrase, str(temp_wav))
-        engine.runAndWait()
+        try:
+            engine.save_to_file(phrase, str(temp_wav))
+            engine.runAndWait()
 
-        if temp_wav.exists():
-            _convert_to_16k_mono(str(temp_wav), str(final_wav))
-            if temp_wav.exists() and temp_wav != final_wav:
-                try:
-                    os.remove(temp_wav)
-                except Exception:
-                    pass
-            created_files.append(str(final_wav))
-            print(f"[{i:02d}/{len(NAMES)}] Generated: {final_wav.name} -> '{phrase}'")
+            if temp_wav.exists():
+                _convert_to_16k_mono(str(temp_wav), str(final_wav))
+                if temp_wav.exists() and temp_wav != final_wav:
+                    try:
+                        os.remove(temp_wav)
+                    except Exception:
+                        pass
+                created_files.append(str(final_wav))
+                print(f"[{i:02d}/{len(NAMES)}] Generated: {final_wav.name} -> '{phrase}'")
+        except Exception as e:
+            print(f"Failed to generate for {name}: {e}")
 
     print(f"\nSuccessfully generated {len(created_files)} synthetic voice samples in {out_dir}")
 
 if __name__ == "__main__":
     main()
+

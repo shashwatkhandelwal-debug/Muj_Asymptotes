@@ -18,7 +18,7 @@
   {
     "scenario": "silent_audio",
     "triggered": true,
-    "raw_score": 0.9933071490757153,
+    "raw_score": 0.9933071966261541,
     "expected_behaviour": "Baseline score on silent input",
     "actual_behaviour": "Synthetic/TTS voice detected",
     "passed": true
