@@ -13,7 +13,25 @@ Missing fields (match is None) are treated as uncertain — not mismatches.
 
 from typing import Optional
 
-from Levenshtein import distance as levenshtein_distance
+try:
+    from Levenshtein import distance as levenshtein_distance
+except ImportError:
+    try:
+        from rapidfuzz.distance.Levenshtein import distance as levenshtein_distance
+    except ImportError:
+        def levenshtein_distance(s1: str, s2: str) -> int:
+            if len(s1) < len(s2):
+                return levenshtein_distance(s2, s1)
+            if len(s2) == 0:
+                return len(s1)
+            prev = list(range(len(s2) + 1))
+            for i, c1 in enumerate(s1):
+                curr = [i + 1]
+                for j, c2 in enumerate(s2):
+                    curr.append(min(curr[j] + 1, prev[j + 1] + 1, prev[j] + (c1 != c2)))
+                prev = curr
+            return prev[-1]
+
 
 # Maximum edit distance allowed for name fuzzy match
 _NAME_MAX_EDIT_DISTANCE = 3

@@ -20,12 +20,17 @@ import tempfile
 from typing import Optional
 
 import cv2
-import easyocr
+try:
+    import easyocr
+    _reader_type = Optional[easyocr.Reader]
+except ImportError:
+    easyocr = None
+    _reader_type = Optional[object]
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_reader: Optional[easyocr.Reader] = None
+_reader: _reader_type = None
 _nlp = None
 _nlp_failed = False
 
