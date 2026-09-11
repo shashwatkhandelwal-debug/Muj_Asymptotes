@@ -1,5 +1,5 @@
-﻿# ============================================================================
-# AEGIS-SENTINEL: Multi-Modal Deepfake & Forensic Defense Core
+# ============================================================================
+# VERITAS: Multi-Modal Deepfake & Forensic Defense Core
 # Local On-Premise Container Deployment (Zero Cloud Dependencies)
 # ============================================================================
 

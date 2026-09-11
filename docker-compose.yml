@@ -1,10 +1,10 @@
-﻿services:
-  aegis-sentinel:
+services:
+  veritas:
     build:
       context: .
       dockerfile: Dockerfile
-    image: aegis-sentinel:latest
-    container_name: aegis_sentinel_core
+    image: veritas:latest
+    container_name: veritas_core
     restart: unless-stopped
     ports:
       - "8000:8000"

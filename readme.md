@@ -1,4 +1,4 @@
-# AEGIS-SENTINEL: Multi-Modal Deepfake & Synthetic Identity Defense Core
+# VERITAS: Multi-Modal Deepfake & Synthetic Identity Defense Core
 
 <div align="center">
 
@@ -34,7 +34,7 @@ Modern identity fraud in high-stakes video onboarding (banking, fintech, border 
 2. **Cloud Exfiltration Risk**: Transmitting live biometric video feeds to third-party cloud APIs introduces latency, creates massive centralized honeypots, and violates data protection statutes such as India's **DPDP Act (2023)**.
 3. **Black-Box Opacity**: Opaque probability numbers provide compliance officers and legal auditors with no explainable, deterministic evidence trail.
 
-**AEGIS-SENTINEL** addresses these vulnerabilities via an **on-device, multi-modal verification platform** that decomposes verification across visual, acoustic, and document domains in parallel, applies empirical **Platt scaling** calibration, enforces **non-dilutable asymmetric risk floors**, and cryptographically seals every decision into a **Shamir-split HMAC-SHA256 tamper-evident audit ledger**.
+**VERITAS** addresses these vulnerabilities via an **on-device, multi-modal verification platform** that decomposes verification across visual, acoustic, and document domains in parallel, applies empirical **Platt scaling** calibration, enforces **non-dilutable asymmetric risk floors**, and cryptographically seals every decision into a **Shamir-split HMAC-SHA256 tamper-evident audit ledger**.
 
 ---
 
@@ -122,7 +122,7 @@ $$P(\text{Attack} \mid \text{Raw Score } x) = \frac{1}{1 + \exp\left(-\left(w \c
 | **`crossfield`** | Deterministic Math | Verhoeff $D_5$ + UIDAI RSA-2048 PKCS#1 v1.5 | Mathematical Checksum / PKI Verification |
 
 ### 3.3 Asymmetric Anti-Dilution Risk Floors
-Standard weighted averaging permits catastrophic biometric attacks to be diluted by pristine ancillary records. Sentinel enforces mathematically guaranteed **Hard Severity Risk Floors**:
+Standard weighted averaging permits catastrophic biometric attacks to be diluted by pristine ancillary records. VERITAS enforces mathematically guaranteed **Hard Severity Risk Floors**:
 
 $$\text{Final Risk Score} = \max\left(\sum_{i} \text{Penalty}(\text{Signal}_i), \bigvee_{j \in \text{HARD}} \text{Floor}(\text{Signal}_j)\right)$$
 
@@ -158,7 +158,7 @@ To prevent insider tampering with forensic verification records:
 
 ## 5. Interactive Red-Team Attack Simulator
 
-AEGIS-SENTINEL includes an integrated **Red-Team Adversarial Testbench** (`/redteam.html`) allowing judges, security researchers, and auditors to execute 1-click live adversarial attacks against the running pipeline:
+VERITAS includes an integrated **Red-Team Adversarial Testbench** (`/redteam.html`) allowing judges, security researchers, and auditors to execute 1-click live adversarial attacks against the running pipeline:
 
 - **6 Live Adversarial Vectors (0% Mock Data)**:
   1. **Face Swap / Deepfake Face**: Injects synthetic face swap frames testing spatial edge degradation and temporal continuity.
@@ -174,7 +174,7 @@ AEGIS-SENTINEL includes an integrated **Red-Team Adversarial Testbench** (`/redt
 
 ## 6. Regulatory Compliance & DPDP Act 2023
 
-AEGIS-SENTINEL is engineered to comply with India's **Digital Personal Data Protection (DPDP) Act, 2023** and **RBI Master Direction on Video-Based Customer Identification Process (V-CIP)**:
+VERITAS is engineered to comply with India's **Digital Personal Data Protection (DPDP) Act, 2023** and **RBI Master Direction on Video-Based Customer Identification Process (V-CIP)**:
 
 1. **Zero Cloud PII Transmission**: All facial landmarking, voice processing, OCR parsing, and cryptographic checks execute strictly on-premise. No biometric data leaves the local host environment.
 2. **Automated Aadhaar UID Masking**: Fully complies with UIDAI regulations and Section 8 of the DPDP Act by masking the first 8 digits of extracted UIDs (`19XXXXXX5678`).
@@ -187,7 +187,7 @@ AEGIS-SENTINEL is engineered to comply with India's **Digital Personal Data Prot
  
 ### 7.1 Option A: Local Docker Deployment (Recommended — 100% On-Premise)
 
-AEGIS-SENTINEL is fully containerized with zero external cloud dependencies, packaging all native system dependencies (`Tesseract OCR`, `OpenCV`, `PyZBar`, `FFmpeg`, `libsndfile`) in an isolated container.
+VERITAS is fully containerized with zero external cloud dependencies, packaging all native system dependencies (`Tesseract OCR`, `OpenCV`, `PyZBar`, `FFmpeg`, `libsndfile`) in an isolated container.
 
 #### 1. One-Click Launch via Docker Compose
 ```bash
@@ -205,19 +205,19 @@ docker compose logs -f
 #### 2. Or Build & Run Standalone Docker Container
 ```bash
 # Build Docker image
-docker build -t aegis-sentinel:latest .
+docker build -t veritas:latest .
 
 # Run on port 8000 with persistent audit ledger
 docker run -d \
-  --name aegis_sentinel_core \
+  --name veritas_core \
   -p 8000:8000 \
   -v $(pwd)/audit.db:/app/audit.db \
-  aegis-sentinel:latest
+  veritas:latest
 ```
 
 #### 3. Run Automated Tests Inside Docker
 ```bash
-docker compose exec aegis-sentinel pytest tests/ -v
+docker compose exec veritas pytest tests/ -v
 ```
 
 ---
@@ -283,7 +283,7 @@ tests/test_redteam_regression.py ..                                           [1
 
 ## 9. Evaluation Matrix
 
-| Evaluation Dimension | Conventional Approach | AEGIS-SENTINEL Implementation |
+| Evaluation Dimension | Conventional Approach | VERITAS Implementation |
 | :--- | :--- | :--- |
 | **Data Authenticity** | Hardcoded mock figures & random generators | **0% Mock Data** — 100% computed live by forensic pipeline |
 | **Biometric Defenses** | Basic cosine face comparison | **Dual-Domain** (Laplacian spatial + temporal inter-frame jitter) |

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red-Team Attack Simulator | Aegis-KYC</title>
+    <title>Red-Team Attack Simulator | Veritas-KYC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .glow-red { box-shadow: 0 0 25px rgba(239, 68, 68, 0.45); }
@@ -25,7 +25,7 @@
                 <span class="text-2xl">🛡️</span>
                 <div>
                     <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-red-400 via-rose-300 to-amber-300 bg-clip-text text-transparent">
-                        Aegis-KYC <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-red-950/80 border border-red-800 text-red-400 ml-1">Red-Team Lab</span>
+                        Veritas-KYC <span class="text-xs font-semibold uppercase px-2 py-0.5 rounded bg-red-950/80 border border-red-800 text-red-400 ml-1">Red-Team Lab</span>
                     </h1>
                     <p class="text-xs text-slate-400">Live Adversarial Attack Simulator & Bayesian Trust Decay</p>
                 </div>
@@ -112,7 +112,7 @@
             </div>
 
             <p class="text-[11px] text-slate-400 leading-normal pt-1">
-                <span class="text-indigo-400 font-semibold">💡 Live Capture Context:</span> During live onboarding, Sentinel enforces a dynamic single-use 5-character nonce with dynamic head-pose tracking. The attack simulator below tests pre-recorded adversarial vectors against these pipeline defenses.
+                <span class="text-indigo-400 font-semibold">💡 Live Capture Context:</span> During live onboarding, Veritas enforces a dynamic single-use 5-character nonce with dynamic head-pose tracking. The attack simulator below tests pre-recorded adversarial vectors against these pipeline defenses.
             </p>
         </div>
 
@@ -126,64 +126,57 @@
             </div>
 
             <div id="scenarios-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Attack Scenario Cards generated dynamically -->
+                <!-- Injected via loadScenarios() -->
             </div>
         </div>
 
-        <!-- Live Execution & Results Section -->
-        <div id="execution-section" class="space-y-6 hidden">
+        <!-- Pipeline Execution and Bayesian Trust Decay Stage -->
+        <div id="execution-stage" class="hidden space-y-6">
             
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <span>🔬</span> 2. Pipeline Execution & Real-Time Trust Decay
-                </h3>
-                <div id="live-indicator" class="flex items-center gap-2 text-xs font-mono text-slate-400">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Live Trace Active
+            <!-- Dynamic State Header -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+                <div class="flex items-center space-x-3">
+                    <span id="status-spinner" class="inline-block w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></span>
+                    <div>
+                        <div id="trust-decay-stage" class="text-sm font-bold text-slate-200">Ingesting Adversarial Multi-Modal Signal...</div>
+                        <div id="trust-step-indicator" class="text-xs font-mono text-slate-400">Step 0/0: Initializing</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="trust-tier-badge" class="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider bg-slate-800 text-slate-400 font-mono">STANDBY</span>
                 </div>
             </div>
 
-            <!-- TRUST DECAY VISUALIZATION CARD -->
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 space-y-4 shadow-xl">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+            <!-- Bayesian Ingestion Progress Bar -->
+            <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-5 space-y-3">
+                <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-[11px] font-mono uppercase text-slate-400 tracking-wider">Bayesian Evidence Ingestion</span>
-                        <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                        <div class="text-xs font-mono uppercase text-slate-400 tracking-wider">Bayesian Evidence Ingestion</div>
+                        <div class="text-base font-bold text-white flex items-center gap-2 mt-0.5">
                             <span>📉</span> Real-Time Trust Evolution
-                        </h4>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <div class="text-[10px] font-mono text-slate-400 uppercase">Identity Trust Level</div>
-                            <div id="trust-percentage" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono transition-all">
-                                98%
-                            </div>
-                        </div>
-                        <div id="trust-tier-badge" class="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider bg-slate-800 text-slate-300 font-mono">
-                            EVALUATING
-                        </div>
+                    <div class="text-right">
+                        <div class="text-xs font-mono uppercase text-slate-400 tracking-wider">Identity Trust Level</div>
+                        <div id="trust-percentage" class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono transition-all">100%</div>
                     </div>
                 </div>
 
-                <!-- Trust Progress Bar -->
-                <div class="space-y-1.5">
-                    <div class="flex justify-between text-xs font-mono text-slate-400">
-                        <span>High Risk (0%)</span>
-                        <span id="trust-decay-stage">Initial Prior: Pristine Baseline</span>
-                        <span>Full Trust (100%)</span>
-                    </div>
-                    <div class="w-full bg-slate-950 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
-                        <div id="trust-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-width duration-300" style="width: 98%;"></div>
-                    </div>
+                <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+                    <div id="trust-bar" class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-green-400 transition-width duration-300" style="width: 100%"></div>
                 </div>
 
-                <!-- Step-by-Step Evidence Decay Log -->
-                <div class="space-y-2 pt-1">
-                    <div class="text-xs font-mono text-slate-400 flex items-center justify-between">
-                        <span>Sequential Signal Evaluation:</span>
-                        <span id="trust-step-indicator" class="text-slate-500">Inference running...</span>
-                    </div>
-                    <div id="trust-events-log" class="space-y-1.5 text-xs font-mono max-h-36 overflow-y-auto pr-1">
-                        <!-- Step items populated during trust decay animation -->
+                <div class="flex justify-between text-[11px] font-mono text-slate-500 pt-0.5">
+                    <span>High Risk (0%)</span>
+                    <span>Baseline Ambiguous (50%)</span>
+                    <span>Full Trust (100%)</span>
+                </div>
+
+                <!-- Live Stream of Ingested Forensic Steps -->
+                <div class="pt-2 border-t border-slate-800/80 space-y-1.5">
+                    <div class="text-xs font-mono text-slate-400">Sequential Signal Evaluation:</div>
+                    <div id="trust-events-log" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs font-mono">
+                        <!-- Log lines populated dynamically -->
                     </div>
                 </div>
             </div>
@@ -260,28 +253,18 @@
                             View Full Chain →
                         </a>
                     </h4>
-                    <div class="rounded-xl border border-slate-800 bg-slate-900/90 p-4 space-y-3 font-mono text-xs">
+                    <div class="rounded-xl border border-slate-800 bg-slate-900/80 p-4 space-y-3 font-mono text-xs">
                         <div>
-                            <div class="text-[11px] text-slate-500">SESSION ID</div>
-                            <div id="audit-session-id" class="text-slate-300 truncate font-semibold">--</div>
+                            <div class="text-slate-400 text-[11px] uppercase">Entry Block Hash</div>
+                            <div id="narrative-block-hash" class="mt-0.5 p-2 rounded bg-slate-950 border border-slate-800 text-amber-400 break-all select-all">--</div>
                         </div>
                         <div>
-                            <div class="text-[11px] text-slate-500">PREVIOUS BLOCK HASH</div>
-                            <div id="audit-prev-hash" class="text-slate-400 text-[10px] break-all">--</div>
+                            <div class="text-slate-400 text-[11px] uppercase">Parent (Previous) Hash</div>
+                            <div id="narrative-prev-hash" class="mt-0.5 p-2 rounded bg-slate-950 border border-slate-800 text-slate-400 break-all select-all">--</div>
                         </div>
-                        <div>
-                            <div class="text-[11px] text-slate-500">CURRENT BLOCK HASH (HMAC-SHA256)</div>
-                            <div id="audit-curr-hash" class="text-emerald-400 text-[10px] break-all font-semibold">--</div>
-                        </div>
-                        <div>
-                            <div class="text-[11px] text-slate-500">TIMESTAMP & LATENCY</div>
-                            <div id="audit-timing" class="text-slate-300">--</div>
-                        </div>
-                        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                            <a href="/dashboard.html" id="link-verify-ledger" class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 hover:text-emerald-300 underline font-semibold">
-                                <span>🔒</span> Validated on local audit ledger
-                            </a>
-                            <span class="text-[10px] text-slate-500">Tamper-evident</span>
+                        <div class="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[11px]">
+                            <span class="text-slate-400">Proof Standard:</span>
+                            <span class="text-emerald-400 font-semibold">HMAC-SHA256 (SSS 2-of-3)</span>
                         </div>
                     </div>
                 </div>
@@ -296,7 +279,7 @@
     <footer class="border-t border-slate-800/80 bg-slate-900/80 backdrop-blur py-6 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-400">
             <div class="flex items-center space-x-2">
-                <span>🛡️ Aegis-KYC Red-Team Environment</span>
+                <span>🛡️ Veritas-KYC Red-Team Environment</span>
                 <span class="text-slate-600">•</span>
                 <span>Real Model Inferences</span>
                 <span class="text-slate-600">•</span>
