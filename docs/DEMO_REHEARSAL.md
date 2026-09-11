@@ -2,7 +2,7 @@
 
 > **Problem Statement #3:** Deepfake and Synthetic Identity Detection  
 > **Theme:** Cybersecurity & Defence  
-> **Team:** Asymptotes (VAJRA-SHIELD)  
+> **Team:** Asymptotes  
 > **Target Demo Duration:** 60 to 90 seconds max
 
 ---
@@ -94,7 +94,7 @@ Open these tabs in a clean Chrome profile before judges arrive:
 
 ### Speaker 1: Yash (0:00 – 0:25) — Problem & Core Architecture
 > *"Good morning judges. Current identity systems have a fatal blind spot: generative diffusion documents and deepfake video bypass traditional OCR and passive liveness checks.*  
-> *We built **VAJRA-SHIELD**, an edge-first defense station that detects deepfakes, synthetic speech, and GenAI documents in under 2.5 seconds with zero cloud reliance."*
+> *We built **Asymptotes**, an edge-first defense station that detects deepfakes, synthetic speech, and GenAI documents in under 2.5 seconds with zero cloud reliance."*
 
 ### Speaker 2: Teammate AI/ML (0:25 – 0:55) — Forensic Channels & Fusion
 > *"Notice the multi-modal defense here: we evaluate radial FFT and CLIP linear probes for diffusion artifacts, per-frame facial warping, and AASIST voice anti-spoofing.*  
