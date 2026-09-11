@@ -267,6 +267,14 @@ async def verify(document_image: UploadFile = File(...),
 
     # 4. Decode frames ONCE, reuse for both B and C-i
     frames = _decode_frames(video_path) if video_path else []
+    if not frames and doc_path and os.path.exists(doc_path):
+        try:
+            import cv2
+            doc_img = cv2.imread(doc_path)
+            if doc_img is not None:
+                frames = [cv2.cvtColor(doc_img, cv2.COLOR_BGR2RGB)]
+        except Exception:
+            pass
 
     # 5. Fire A, B, C in PARALLEL
     genai_task     = loop.run_in_executor(_executor, detect_genai_document, doc_path)
@@ -424,9 +432,54 @@ async def handle_challenge(request: Request):
 
     deepfake_res, challenge_results = await asyncio.gather(deepfake_task, challenge_task)
 
+    # Cross-modal consistency check
+    asr_result = next((r for r in challenge_results
+                       if r.signal == SignalId.NAME_MATCH), None)
+    transcript = asr_result.evidence.get("transcript", "") if asr_result else ""
+    spoken_name = transcript
+
+    cross_modal = check_cross_modal_consistency(
+        primary_ocr_name=expected_name,
+        spoken_name=spoken_name,
+    )
+    if asr_result:
+        asr_result.evidence["cross_modal"] = cross_modal
+        asr_result.evidence["cross_modal_consistent"] = cross_modal["all_consistent"]
+        if not cross_modal["all_consistent"]:
+            asr_result.raw_score = min(1.0,
+                asr_result.raw_score + cross_modal["consistency_score"] * 0.3)
+            asr_result.triggered = (
+                asr_result.raw_score > SIGNAL_TRIGGER[SignalId.NAME_MATCH])
+
     fused = fuse(10.0, [deepfake_res] + challenge_results)
+
+    # Watchlist line
+    watchlist_line = {
+        "signal":    "watchlist",
+        "penalty":   0.0,
+        "label":     "Not on watchlist",
+        "confidence": 0.0,
+        "severity":  "hard",
+        "triggered": False,
+        "evidence":  {},
+        "explanation": "Subject not found in watchlist database."
+    }
+    fused["lines"].insert(0, watchlist_line)
+
     for line in fused["lines"]:
         line["explanation"] = build_signal_explanation(line["signal"], line)
+        sig = line.get("signal", "")
+        prov = MODEL_PROVENANCE.get(sig, {})
+        ev = line.get("evidence", {})
+        method = str(ev.get("method", "") or ev.get("mode", ""))
+        is_fallback = any(w in method.lower() for w in
+                          ["heuristic", "fallback", "laplacian", "fft"])
+        line["model_provenance"] = {
+            "model":       prov.get("fallback" if is_fallback else "primary", "unknown"),
+            "is_fallback": is_fallback,
+            "calibration": prov.get("calibration", "unknown"),
+            "samples":     prov.get("samples", "unknown"),
+        }
 
     response = {
         "ok": True,
