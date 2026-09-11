@@ -1,0 +1,72 @@
+{
+  "existing": {},
+  "lines": [
+    {
+      "signal": "genai_doc",
+      "penalty": 0.0,
+      "label": "Document appears genuine (natural sensor noise detected)",
+      "confidence": 0.06,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "heatmap_path": "/static/hm_genai_demo.png",
+        "method": "fft_heuristic"
+      }
+    },
+    {
+      "signal": "face_deepfake",
+      "penalty": 0.0,
+      "label": "Natural facial micro-movements verified",
+      "confidence": 0.09,
+      "severity": "hard",
+      "triggered": false,
+      "evidence": {
+        "mode": "per_frame_aggregate",
+        "per_frame_scores": [0.08, 0.11, 0.07, 0.12, 0.09]
+      }
+    },
+    {
+      "signal": "active_liveness",
+      "penalty": 0.0,
+      "label": "Liveness action confirmed: turn_left",
+      "confidence": 0.04,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "expected_action": "turn_left",
+        "detected": true
+      }
+    },
+    {
+      "signal": "name_match",
+      "penalty": 0.0,
+      "label": "Spoken name matches document",
+      "confidence": 0.03,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "transcript": "priya sharma 2026-09-11 4471",
+        "name_ratio": 0.99,
+        "nonce_present": true,
+        "date_present": true
+      }
+    },
+    {
+      "signal": "voice_spoof",
+      "penalty": 0.0,
+      "label": "Voice acoustic profile genuine",
+      "confidence": 0.11,
+      "severity": "hard",
+      "triggered": false,
+      "evidence": {
+        "method": "mfcc_heuristic"
+      }
+    }
+  ],
+  "final": {
+    "score": 8.0,
+    "tier": "clear",
+    "floors_applied": []
+  },
+  "summary": "Final verdict: CLEAR (score 8.0). All biometrics and document channels validated. No synthetic anomalies detected."
+}

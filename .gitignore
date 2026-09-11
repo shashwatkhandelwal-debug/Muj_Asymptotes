@@ -8,3 +8,6 @@ __pycache__/
 models/*
 !models/README.md
 notebooks/*.ipynb_checkpoints
+
+# IDE agents
+.agents/

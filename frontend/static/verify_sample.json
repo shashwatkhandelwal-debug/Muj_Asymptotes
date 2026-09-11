@@ -1,0 +1,72 @@
+{
+  "existing": {},
+  "lines": [
+    {
+      "signal": "genai_doc",
+      "penalty": 3.75,
+      "label": "Document appears genuine",
+      "confidence": 0.15,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "heatmap_path": "/static/hm_genai_demo.png",
+        "method": "fft_heuristic"
+      }
+    },
+    {
+      "signal": "face_deepfake",
+      "penalty": 25.0,
+      "label": "Deepfake artifacts detected",
+      "confidence": 0.91,
+      "severity": "hard",
+      "triggered": true,
+      "evidence": {
+        "mode": "per_frame_aggregate",
+        "per_frame_scores": [0.88, 0.92, 0.95, 0.71, 0.85]
+      }
+    },
+    {
+      "signal": "active_liveness",
+      "penalty": 0.0,
+      "label": "Liveness action confirmed: turn_left",
+      "confidence": 0.08,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "expected_action": "turn_left",
+        "detected": true
+      }
+    },
+    {
+      "signal": "name_match",
+      "penalty": 0.0,
+      "label": "Spoken name matches document",
+      "confidence": 0.05,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {
+        "transcript": "priya sharma 2026-09-11 4471",
+        "name_ratio": 0.98,
+        "nonce_present": true,
+        "date_present": true
+      }
+    },
+    {
+      "signal": "voice_spoof",
+      "penalty": 0.0,
+      "label": "Voice appears genuine",
+      "confidence": 0.18,
+      "severity": "hard",
+      "triggered": false,
+      "evidence": {
+        "method": "mfcc_heuristic"
+      }
+    }
+  ],
+  "final": {
+    "score": 82.0,
+    "tier": "flagged",
+    "floors_applied": ["face_deepfake"]
+  },
+  "summary": "Final verdict: FLAGGED (score 82.0). face_deepfake: Deepfake artifacts detected (confidence 0.91). Anti-dilution floor applied: face_deepfake."
+}

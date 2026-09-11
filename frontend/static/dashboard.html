@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAJRA-SHIELD | Forensic Biometric & Synthetic Identity Detection Dashboard</title>
+  <!-- Google Fonts: Inter & JetBrains Mono for Cyber/Defense styling -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fallback & Custom Defense UI Styles -->
+  <style>
+    :root {
+      --tier-clear: #22c55e;
+      --tier-review: #f59e0b;
+      --tier-flagged: #ef4444;
+      --bg-dark: #080c14;
+      --card-bg: #0f172a;
+      --card-border: #1e293b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #080c14;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Strict fallback color classes if CDN is offline */
+    .color-clear { color: #22c55e !important; }
+    .color-review { color: #f59e0b !important; }
+    .color-flagged { color: #ef4444 !important; }
+    
+    .bg-tier-clear { background-color: #22c55e !important; }
+    .bg-tier-review { background-color: #f59e0b !important; }
+    .bg-tier-flagged { background-color: #ef4444 !important; }
+    
+    .border-tier-clear { border-color: #22c55e !important; }
+    .border-tier-review { border-color: #f59e0b !important; }
+    .border-tier-flagged { border-color: #ef4444 !important; }
+
+    /* Badges */
+    .badge-hard-triggered {
+      background-color: #ef4444 !important;
+      color: #ffffff !important;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .badge-soft-triggered {
+      background-color: #f59e0b !important;
+      color: #000000 !important;
+      font-weight: 700;
+    }
+    .badge-safe {
+      background-color: #22c55e !important;
+      color: #000000 !important;
+      font-weight: 700;
+    }
+    .badge-hard-safe {
+      background-color: rgba(34, 197, 94, 0.15) !important;
+      color: #22c55e !important;
+      border: 1px solid rgba(34, 197, 94, 0.4) !important;
+    }
+    .badge-hard-label-grey {
+      background-color: #334155 !important;
+      color: #94a3b8 !important;
+      font-weight: 600;
+    }
+
+    /* Flash animation on score updates */
+    @keyframes scoreFlash {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+      50% { box-shadow: 0 0 25px 5px rgba(239, 68, 68, 0.4); transform: scale(1.01); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(1); }
+    }
+    @keyframes scoreFlashClear {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+      50% { box-shadow: 0 0 25px 5px rgba(34, 197, 94, 0.4); transform: scale(1.01); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); transform: scale(1); }
+    }
+    .flash-flagged {
+      animation: scoreFlash 0.6s ease-in-out;
+    }
+    .flash-clear {
+      animation: scoreFlashClear 0.6s ease-in-out;
+    }
+
+    /* Glassmorphism Defense Cards */
+    .defense-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 0.75rem;
+      backdrop-filter: blur(12px);
+    }
+    .defense-card:hover {
+      border-color: rgba(100, 116, 139, 0.7);
+    }
+
+    /* Subtle grid overlay for defense/tactical look */
+    .tactical-grid {
+      background-image: radial-gradient(rgba(30, 41, 59, 0.4) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen tactical-grid text-slate-100 flex flex-col justify-between">
+
+  <!-- TOP APP HEADER -->
+  <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-50 px-4 sm:px-6 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <!-- Title & Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-white uppercase">VAJRA-SHIELD</h1>
+            <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">HackMUJ 4.0 — PS#3</span>
+          </div>
+          <p class="text-xs text-slate-400">Deepfake & Synthetic Identity Defense Station | Real-Time Verification</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <a href="capture.html" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-600/30 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          <span>Live Capture</span>
+        </a>
+
+        <button id="btnRefresh" onclick="manualRefresh()" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+          <svg id="refreshIcon" class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span>REFRESH</span>
+        </button>
+
+        <button id="btnLoadFixture" onclick="loadFixtureData()" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-red-950/40 text-red-300 border border-red-800/60 hover:bg-red-900/40 transition">
+          <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+          <span>LOAD FIXTURE</span>
+        </button>
+
+        <button id="btnLoadClear" onclick="loadClearData()" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 hover:bg-emerald-900/40 transition">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span>DEMO: CLEAR</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 w-full flex-grow space-y-6">
+
+    <!-- 3-COLUMN RESPONSIVE GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- ========================================================================= -->
+      <!-- COLUMN 1: FUSED SCORE, FLOORS APPLIED, ALL SIGNALS TABLE -->
+      <!-- ========================================================================= -->
+      <div class="space-y-6 flex flex-col justify-between">
+        
+        <!-- FUSED SCORE PANEL -->
+        <div id="scoreCard" class="defense-card p-5 relative overflow-hidden transition-all duration-300">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-mono font-semibold tracking-wider text-slate-400 uppercase">FUSED RISK SCORE</span>
+            <span id="tierBadge" class="text-xs font-bold font-mono px-2.5 py-1 rounded tracking-wider uppercase">
+              --
+            </span>
+          </div>
+
+          <!-- Giant Numeric Score + Tier Status -->
+          <div class="flex items-baseline space-x-3 mb-4">
+            <div id="scoreDisplay" class="text-5xl font-extrabold font-mono tracking-tight text-white">
+              --
+            </div>
+            <div class="text-xs text-slate-400 font-mono">
+              / 100 <span id="tierSubtitle" class="ml-1 uppercase font-bold"></span>
+            </div>
+          </div>
+
+          <!-- Horizontal Score Bar with 30 & 70 Tick Marks -->
+          <div class="relative pt-1 pb-4">
+            <!-- Ticks and labels -->
+            <div class="relative w-full h-4 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+              <div id="scoreBarFill" class="h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+            </div>
+
+            <!-- Tick 30% -->
+            <div class="absolute top-1 bottom-4 left-[30%] -ml-px w-0.5 bg-slate-600/70 pointer-events-none z-10"></div>
+            <div class="absolute top-6 left-[30%] -translate-x-1/2 text-[10px] font-mono text-slate-500">30</div>
+
+            <!-- Tick 70% -->
+            <div class="absolute top-1 bottom-4 left-[70%] -ml-px w-0.5 bg-slate-600/70 pointer-events-none z-10"></div>
+            <div class="absolute top-6 left-[70%] -translate-x-1/2 text-[10px] font-mono text-slate-500">70</div>
+
+            <!-- Range labels -->
+            <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-3 pt-1 px-1">
+              <span>0 (CLEAR)</span>
+              <span class="pl-4">REVIEW</span>
+              <span>100 (FLAGGED)</span>
+            </div>
+          </div>
+
+          <!-- FLOORS APPLIED SECTION -->
+          <div class="border-t border-slate-800/80 pt-4 mt-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-mono uppercase font-semibold text-slate-400 tracking-wider">ANTI-DILUTION FLOORS</span>
+              <span id="floorsStatusCount" class="text-[10px] font-mono text-slate-500"></span>
+            </div>
+            <div id="floorsContainer" class="flex flex-wrap gap-2">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ALL SIGNALS TABLE (Bottom of Column 1) -->
+        <div class="defense-card p-4 flex-grow flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                <span>ALL SIGNALS EVALUATED</span>
+              </h2>
+              <span id="signalCountBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0 channels</span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
+                    <th class="py-2 px-2">Signal</th>
+                    <th class="py-2 px-2 text-right">Confidence</th>
+                    <th class="py-2 px-2 text-right">Penalty</th>
+                    <th class="py-2 px-2 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="signalTableBody" class="divide-y divide-slate-800/60 font-mono">
+                  <!-- Rows injected via render() -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/60 mt-3 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+            <span>Deterministic Scoring Engine</span>
+            <span>Zero Cloud Runtime</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- COLUMN 2: ELA HEATMAP, FACE DEEPFAKE (SPARKLINE), NAME MATCH -->
+      <!-- ========================================================================= -->
+      <div class="space-y-6">
+        
+        <!-- 1. ELA HEATMAP PANEL -->
+        <div class="defense-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold uppercase text-slate-300">ELA Heatmap</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Forensics / JPEG</span>
+          </div>
+          <div id="elaContainer" class="h-36 bg-slate-900/90 rounded-md border border-slate-800 flex items-center justify-center overflow-hidden relative">
+            <!-- Handled dynamically in render() -->
+            <div class="text-center p-4">
+              <svg class="w-7 h-7 mx-auto text-slate-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-xs text-slate-400 font-mono">No heatmap available</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-mono">Error Level Analysis: compression surface artifact scan</p>
+        </div>
+
+        <!-- 2. FACE DEEPFAKE PANEL (WITH SPARKLINE) -->
+        <div class="defense-card p-4 relative overflow-hidden" id="faceDeepfakeCard">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono font-semibold uppercase text-slate-300">Face Deepfake</span>
+              <span id="deepfakeSeverityBadge" class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
+                HARD
+              </span>
+            </div>
+            <div id="deepfakeConfidenceBadge" class="text-xs font-mono font-bold">
+              --
+            </div>
+          </div>
+
+          <div class="my-3 flex items-center justify-between bg-slate-900/80 p-3 rounded border border-slate-800">
+            <div>
+              <div id="deepfakeLabel" class="text-xs font-medium text-slate-200">Checking...</div>
+              <div id="deepfakeMode" class="text-[10px] text-slate-400 font-mono mt-0.5">mode: --</div>
+            </div>
+            <!-- SPARKLINE CONTAINER: 180x40px inline SVG bar chart -->
+            <div class="flex flex-col items-end">
+              <div id="deepfakeSparkline" class="w-[180px] h-[40px] flex items-end justify-between bg-slate-950/60 p-1 rounded border border-slate-800/80">
+                <!-- Injected via render() -->
+              </div>
+              <span class="text-[9px] font-mono text-slate-500 mt-1">per-frame confidence (5 frames)</span>
+            </div>
+          </div>
+
+          <div class="text-[10px] font-mono text-slate-400 flex items-center justify-between">
+            <span>High-frequency boundary & warping</span>
+            <span class="text-red-400 font-bold" id="deepfakeFloorNote"></span>
+          </div>
+        </div>
+
+        <!-- 3. NAME MATCH PANEL -->
+        <div class="defense-card p-4" id="nameMatchCard">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono font-semibold uppercase text-slate-300">Name Match</span>
+              <span id="nameMatchBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">SOFT</span>
+            </div>
+            <div id="nameMatchRatio" class="text-xs font-mono font-bold text-emerald-400">
+              --
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded border border-slate-800 space-y-2">
+            <div class="flex items-center space-x-2">
+              <span id="nameMatchIcon" class="text-emerald-400 font-bold">✓</span>
+              <span id="nameMatchLabel" class="text-xs text-slate-200 font-medium">Checking cross-modal identity...</span>
+            </div>
+            <div>
+              <div class="text-[10px] font-mono text-slate-500 uppercase">Spoken Transcript:</div>
+              <div id="nameMatchTranscript" class="text-xs font-mono bg-slate-950 p-2 rounded border border-slate-800 text-cyan-300 mt-1 break-words">
+                --
+              </div>
+            </div>
+            <div id="nameMatchNonceTags" class="flex flex-wrap gap-2 text-[10px] font-mono pt-1">
+              <!-- Nonce and Date verification tags -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- COLUMN 3: GENAI HEATMAP, ACTIVE LIVENESS, VOICE SPOOF -->
+      <!-- ========================================================================= -->
+      <div class="space-y-6">
+        
+        <!-- 1. GENAI HEATMAP PANEL -->
+        <div class="defense-card p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono font-semibold uppercase text-slate-300">GenAI Heatmap</span>
+            <span id="genaiMethodTag" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Diffusion / GAN</span>
+          </div>
+          <div id="genaiContainer" class="h-36 bg-slate-900/90 rounded-md border border-slate-800 flex items-center justify-center overflow-hidden relative">
+            <!-- Handled dynamically in render() -->
+            <div class="text-center p-4">
+              <svg class="w-7 h-7 mx-auto text-slate-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <span class="text-xs text-slate-400 font-mono">No heatmap available</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2 font-mono">Radial FFT & Linear Probe spectral anomaly scan</p>
+        </div>
+
+        <!-- 2. ACTIVE LIVENESS PANEL -->
+        <div class="defense-card p-4" id="activeLivenessCard">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono font-semibold uppercase text-slate-300">Active Liveness</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">SOFT</span>
+            </div>
+            <div id="activeLivenessConfidence" class="text-xs font-mono font-bold text-emerald-400">
+              --
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded border border-slate-800 space-y-2">
+            <div class="flex items-center space-x-2">
+              <span id="activeLivenessCheck" class="text-emerald-400 text-lg font-bold">✓</span>
+              <div>
+                <div id="activeLivenessAction" class="text-xs font-bold font-mono text-cyan-300 uppercase">--</div>
+                <div id="activeLivenessLabel" class="text-xs text-slate-300 mt-0.5">--</div>
+              </div>
+            </div>
+            <div class="text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800/80 flex items-center justify-between">
+              <span>Challenge-Response Random Nonce</span>
+              <span class="text-emerald-400 font-semibold" id="activeLivenessStatus">Confirmed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. VOICE SPOOF PANEL -->
+        <div class="defense-card p-4" id="voiceSpoofCard">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono font-semibold uppercase text-slate-300">Voice Spoof</span>
+              <span id="voiceSeverityBadge" class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
+                HARD
+              </span>
+            </div>
+            <div id="voiceConfidenceBadge" class="text-xs font-mono font-bold">
+              --
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 p-3 rounded border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <div id="voiceLabel" class="text-xs font-medium text-slate-200">Analyzing voice harmonics...</div>
+              <span id="voiceStatusBadge" class="text-[10px] font-mono px-2 py-0.5 rounded font-bold">--</span>
+            </div>
+            <div class="text-[10px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/80">
+              <span id="voiceMethod">method: --</span>
+              <span>AASIST / MFCC Flatness</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BOTTOM: OFFICER SUMMARY SECTION (FULL WIDTH) -->
+    <!-- ========================================================================= -->
+    <div class="defense-card p-5 border-l-4 border-l-cyan-500 shadow-xl">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center space-x-2">
+          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <h2 class="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">OFFICER SUMMARY & AUDIT RATIONALE</h2>
+        </div>
+        <span class="text-[10px] font-mono text-slate-500">Auto-Generated Verdict Trail</span>
+      </div>
+      <p id="officerSummaryText" class="text-sm font-mono text-slate-200 leading-relaxed bg-slate-950/70 p-4 rounded-md border border-slate-800">
+        Loading verification report...
+      </p>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-800/80 bg-slate-950/60 py-3 px-6 text-center text-xs text-slate-500 font-mono">
+    <span>HackMUJ 4.0 Submission | PS#3 Deepfake & Synthetic Identity Detection | Team Asymptotes</span>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // State
+    let lastSummary = "";
+    let lastScore = null;
+    let pollInterval = null;
+
+    // Strict color rules
+    const COLOR_CLEAR = "#22c55e";
+    const COLOR_REVIEW = "#f59e0b";
+    const COLOR_FLAGGED = "#ef4444";
+
+    /**
+     * loadData(forceFixture): loads backend live state or fallback fixture
+     */
+    async function loadData(forceFixture = false) {
+      if (!forceFixture) {
+        try {
+          const res = await fetch("/api/verify/last");
+          if (res.ok) {
+            const d = await res.json();
+            if (!d.error) return d;
+          }
+        } catch (e) {
+          /* backend not up, fall through to fixture */
+        }
+      }
+      const res = await fetch("verify_sample.json");
+      return await res.json();
+    }
+
+    /**
+     * loadClearFixture(): loads the clear case fixture
+     */
+    async function loadClearFixture() {
+      const res = await fetch("verify_sample_clear.json");
+      return await res.json();
+    }
+
+    async function manualRefresh() {
+      const icon = document.getElementById("refreshIcon");
+      if (icon) icon.classList.add("animate-spin");
+      try {
+        const data = await loadData();
+        render(data);
+      } finally {
+        setTimeout(() => {
+          if (icon) icon.classList.remove("animate-spin");
+        }, 400);
+      }
+    }
+
+    async function loadFixtureData() {
+      const data = await loadData(true);
+      render(data);
+    }
+
+    async function loadClearData() {
+      const data = await loadClearFixture();
+      render(data);
+    }
+
+    /**
+     * Polls backend every 3s
+     */
+    function startAutoRefresh() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/verify/last");
+          if (res.ok) {
+            const d = await res.json();
+            if (!d.error && (d.final.score !== lastScore || d.summary !== lastSummary)) {
+              render(d);
+            }
+          }
+        } catch (e) {
+          // Backend not reachable, ignore polling errors silently
+        }
+      }, 3000);
+    }
+
+    /**
+     * Main render function that handles all DOM updates
+     */
+    function render(data) {
+      if (!data || !data.final) return;
+
+      const score = Number(data.final.score || 0);
+      const tier = String(data.final.tier || "clear").toLowerCase();
+      const floors = data.final.floors_applied || [];
+      const lines = data.lines || [];
+      const summary = data.summary || "";
+
+      // Flash animation on change
+      const scoreCard = document.getElementById("scoreCard");
+      if (lastScore !== null && lastScore !== score) {
+        scoreCard.classList.remove("flash-flagged", "flash-clear");
+        void scoreCard.offsetWidth; // trigger reflow
+        if (tier === "flagged") {
+          scoreCard.classList.add("flash-flagged");
+        } else if (tier === "clear") {
+          scoreCard.classList.add("flash-clear");
+        }
+      }
+      lastScore = score;
+      lastSummary = summary;
+
+      // 1. Score display & Tier Badge
+      const scoreDisplay = document.getElementById("scoreDisplay");
+      scoreDisplay.innerText = score.toFixed(0);
+
+      const tierBadge = document.getElementById("tierBadge");
+      const tierSubtitle = document.getElementById("tierSubtitle");
+      tierBadge.innerText = tier.toUpperCase();
+      tierSubtitle.innerText = `(${tier})`;
+
+      let tierColor = COLOR_CLEAR;
+      if (tier === "flagged") tierColor = COLOR_FLAGGED;
+      else if (tier === "review") tierColor = COLOR_REVIEW;
+
+      tierBadge.style.backgroundColor = tierColor;
+      tierBadge.style.color = tier === "review" ? "#000000" : "#ffffff";
+      tierSubtitle.style.color = tierColor;
+
+      // Score Bar Fill
+      const scoreBarFill = document.getElementById("scoreBarFill");
+      scoreBarFill.style.width = Math.min(Math.max(score, 0), 100) + "%";
+      scoreBarFill.style.backgroundColor = tierColor;
+
+      // 2. Floors Applied
+      const floorsContainer = document.getElementById("floorsContainer");
+      const floorsStatusCount = document.getElementById("floorsStatusCount");
+      floorsContainer.innerHTML = "";
+
+      if (floors.length === 0) {
+        floorsStatusCount.innerText = "None active";
+        floorsContainer.innerHTML = `<span class="text-xs text-slate-500 font-mono italic">No floors active (standard linear fusion)</span>`;
+      } else {
+        floorsStatusCount.innerText = `${floors.length} active`;
+        floors.forEach(floor => {
+          const pill = document.createElement("span");
+          pill.className = "inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-mono font-bold text-white shadow-sm";
+          pill.style.backgroundColor = "#ef4444";
+          pill.innerHTML = `<span>●</span><span>${floor} → ${tier.toUpperCase()}</span>`;
+          floorsContainer.appendChild(pill);
+        });
+      }
+
+      // 3. All Signals Table
+      const tbody = document.getElementById("signalTableBody");
+      const signalCountBadge = document.getElementById("signalCountBadge");
+      tbody.innerHTML = "";
+      signalCountBadge.innerText = `${lines.length} channels`;
+
+      lines.forEach(line => {
+        const tr = document.createElement("tr");
+        const isTriggered = !!line.triggered;
+        const severity = (line.severity || "soft").toLowerCase();
+
+        // Row background: colored by triggered state at 10% opacity
+        if (isTriggered) {
+          tr.style.backgroundColor = severity === "hard" ? "rgba(239, 68, 68, 0.10)" : "rgba(245, 158, 11, 0.10)";
+        } else {
+          tr.style.backgroundColor = "rgba(34, 197, 94, 0.05)";
+        }
+
+        // Status badge logic
+        let badgeHtml = "";
+        if (isTriggered && severity === "hard") {
+          badgeHtml = `<span class="badge-hard-triggered px-2 py-0.5 rounded text-[10px]">HARD</span>`;
+        } else if (isTriggered && severity === "soft") {
+          badgeHtml = `<span class="badge-soft-triggered px-2 py-0.5 rounded text-[10px]">TRIGGERED</span>`;
+        } else if (!isTriggered && severity === "hard") {
+          // A HARD signal not triggered: green fill, but still show the HARD label in grey
+          badgeHtml = `<span class="inline-flex items-center space-x-1">
+            <span class="badge-safe px-1.5 py-0.5 rounded text-[10px]">SAFE</span>
+            <span class="badge-hard-label-grey px-1 py-0.5 rounded text-[9px]">HARD</span>
+          </span>`;
+        } else {
+          badgeHtml = `<span class="badge-safe px-2 py-0.5 rounded text-[10px]">PASS</span>`;
+        }
+
+        const confPct = Math.round((Number(line.confidence) || 0) * 100);
+        const penaltyVal = Number(line.penalty || 0).toFixed(1);
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-2 text-slate-200 font-medium">
+            <div class="flex flex-col">
+              <span class="font-semibold text-slate-100">${line.signal}</span>
+              <span class="text-[10px] text-slate-400 truncate max-w-[140px]">${line.label || ""}</span>
+            </div>
+          </td>
+          <td class="py-2.5 px-2 text-right text-slate-300">${confPct}%</td>
+          <td class="py-2.5 px-2 text-right ${penaltyVal > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}">+${penaltyVal}</td>
+          <td class="py-2.5 px-2 text-center">${badgeHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // 4. Specific Panels Extraction
+      const signalMap = {};
+      lines.forEach(l => { signalMap[l.signal] = l; });
+
+      // ELA Heatmap (if in lines or evidence)
+      const elaSig = signalMap["ela"];
+      const elaContainer = document.getElementById("elaContainer");
+      if (elaSig && elaSig.evidence && elaSig.evidence.heatmap_path) {
+        renderHeatmap(elaContainer, elaSig.evidence.heatmap_path, "ELA Analysis");
+      } else {
+        renderHeatmapFallback(elaContainer, "No heatmap available");
+      }
+
+      // GenAI Heatmap
+      const genaiSig = signalMap["genai_doc"];
+      const genaiContainer = document.getElementById("genaiContainer");
+      const genaiMethodTag = document.getElementById("genaiMethodTag");
+      if (genaiSig) {
+        if (genaiSig.evidence && genaiSig.evidence.method) {
+          genaiMethodTag.innerText = genaiSig.evidence.method;
+        }
+        if (genaiSig.evidence && genaiSig.evidence.heatmap_path) {
+          renderHeatmap(genaiContainer, genaiSig.evidence.heatmap_path, "GenAI Spectral Anomaly");
+        } else {
+          renderHeatmapFallback(genaiContainer, "No heatmap available");
+        }
+      } else {
+        renderHeatmapFallback(genaiContainer, "No heatmap available");
+      }
+
+      // Face Deepfake Panel
+      const dfSig = signalMap["face_deepfake"];
+      const dfSeverityBadge = document.getElementById("deepfakeSeverityBadge");
+      const dfConfBadge = document.getElementById("deepfakeConfidenceBadge");
+      const dfLabel = document.getElementById("deepfakeLabel");
+      const dfMode = document.getElementById("deepfakeMode");
+      const dfSparkline = document.getElementById("deepfakeSparkline");
+      const dfFloorNote = document.getElementById("deepfakeFloorNote");
+
+      if (dfSig) {
+        const isDfTriggered = !!dfSig.triggered;
+        const dfConf = Number(dfSig.confidence || 0);
+        const dfPct = Math.round(dfConf * 100);
+
+        dfConfBadge.innerText = `${dfPct}%`;
+        dfLabel.innerText = dfSig.label || "Analyzed";
+
+        if (isDfTriggered) {
+          dfSeverityBadge.className = "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded badge-hard-triggered";
+          dfSeverityBadge.innerText = "HARD";
+          dfConfBadge.style.color = "#ef4444";
+          dfFloorNote.innerText = floors.includes("face_deepfake") ? "● ANTI-DILUTION FLOOR TRIGGERED" : "";
+        } else {
+          // A HARD signal not triggered: green fill, but still show the HARD label in grey
+          dfSeverityBadge.className = "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded badge-hard-label-grey";
+          dfSeverityBadge.innerText = "HARD";
+          dfConfBadge.style.color = "#22c55e";
+          dfFloorNote.innerText = "";
+        }
+
+        if (dfSig.evidence) {
+          dfMode.innerText = `mode: ${dfSig.evidence.mode || "standard"}`;
+          // Draw Sparkline if per_frame_scores exists
+          renderSparkline(dfSparkline, dfSig.evidence.per_frame_scores);
+        } else {
+          dfMode.innerText = "mode: standard";
+          dfSparkline.innerHTML = `<span class="text-[9px] text-slate-600 m-auto">no frame data</span>`;
+        }
+      }
+
+      // Name Match Panel
+      const nmSig = signalMap["name_match"];
+      const nmRatio = document.getElementById("nameMatchRatio");
+      const nmLabel = document.getElementById("nameMatchLabel");
+      const nmTranscript = document.getElementById("nameMatchTranscript");
+      const nmIcon = document.getElementById("nameMatchIcon");
+      const nmNonceTags = document.getElementById("nameMatchNonceTags");
+
+      if (nmSig) {
+        const ev = nmSig.evidence || {};
+        const ratio = ev.name_ratio !== undefined ? Math.round(ev.name_ratio * 100) : Math.round((1 - (nmSig.confidence || 0)) * 100);
+        nmRatio.innerText = `✓ ${ratio}% match`;
+        nmLabel.innerText = nmSig.label || "Spoken name matches document";
+        nmTranscript.innerText = ev.transcript ? `"${ev.transcript}"` : "No spoken transcript recorded";
+        
+        nmNonceTags.innerHTML = "";
+        if (ev.nonce_present) {
+          nmNonceTags.innerHTML += `<span class="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">✓ Nonce Verified</span>`;
+        }
+        if (ev.date_present) {
+          nmNonceTags.innerHTML += `<span class="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-800/40">✓ Date Matched</span>`;
+        }
+      }
+
+      // Active Liveness Panel
+      const alSig = signalMap["active_liveness"];
+      const alAction = document.getElementById("activeLivenessAction");
+      const alLabel = document.getElementById("activeLivenessLabel");
+      const alConfidence = document.getElementById("activeLivenessConfidence");
+      const alCheck = document.getElementById("activeLivenessCheck");
+      const alStatus = document.getElementById("activeLivenessStatus");
+
+      if (alSig) {
+        const ev = alSig.evidence || {};
+        const action = ev.expected_action || "action_required";
+        alAction.innerText = action;
+        alLabel.innerText = alSig.label || "Liveness action confirmed";
+        const confPct = Math.round((alSig.confidence || 0) * 100);
+        alConfidence.innerText = `${confPct}%`;
+        
+        if (ev.detected !== false && !alSig.triggered) {
+          alCheck.innerText = "✓";
+          alCheck.className = "text-emerald-400 text-lg font-bold";
+          alStatus.innerText = "Confirmed";
+          alStatus.className = "text-emerald-400 font-semibold";
+        } else {
+          alCheck.innerText = "✕";
+          alCheck.className = "text-red-400 text-lg font-bold";
+          alStatus.innerText = "Failed";
+          alStatus.className = "text-red-400 font-semibold";
+        }
+      }
+
+      // Voice Spoof Panel
+      const vsSig = signalMap["voice_spoof"];
+      const vsSeverityBadge = document.getElementById("voiceSeverityBadge");
+      const vsConfBadge = document.getElementById("voiceConfidenceBadge");
+      const vsLabel = document.getElementById("voiceLabel");
+      const vsStatusBadge = document.getElementById("voiceStatusBadge");
+      const vsMethod = document.getElementById("voiceMethod");
+
+      if (vsSig) {
+        const isVsTriggered = !!vsSig.triggered;
+        const vsConf = Number(vsSig.confidence || 0);
+        const vsPct = Math.round(vsConf * 100);
+
+        vsConfBadge.innerText = `${vsPct}%`;
+        vsLabel.innerText = vsSig.label || (isVsTriggered ? "Synthetic Voice Detected" : "Voice appears genuine");
+
+        if (isVsTriggered) {
+          vsSeverityBadge.className = "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded badge-hard-triggered";
+          vsSeverityBadge.innerText = "HARD";
+          vsConfBadge.style.color = "#ef4444";
+          vsStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-red-500 text-white font-bold";
+          vsStatusBadge.innerText = "SPOOF";
+        } else {
+          // A HARD signal not triggered: green fill, but still show the HARD label in grey
+          vsSeverityBadge.className = "text-[10px] font-mono font-bold px-1.5 py-0.5 rounded badge-hard-label-grey";
+          vsSeverityBadge.innerText = "HARD";
+          vsConfBadge.style.color = "#22c55e";
+          vsStatusBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold";
+          vsStatusBadge.innerText = "GENUINE";
+        }
+
+        const method = (vsSig.evidence && vsSig.evidence.method) ? vsSig.evidence.method : "mfcc_heuristic";
+        vsMethod.innerText = `method: ${method}`;
+      }
+
+      // 5. Officer Summary
+      const officerSummaryText = document.getElementById("officerSummaryText");
+      officerSummaryText.innerText = summary || "No summary recorded for this verification session.";
+    }
+
+    /**
+     * Sparkline (face_deepfake panel): inline SVG bar chart 180x40px
+     * One bar per frame score.
+     * Bar colour: green below 0.5, amber 0.5 to 0.7, red above 0.7
+     */
+    function renderSparkline(container, scores) {
+      if (!scores || !Array.isArray(scores) || scores.length === 0) {
+        container.innerHTML = `<span class="text-[9px] text-slate-600 m-auto">no frames</span>`;
+        return;
+      }
+
+      const width = 180;
+      const height = 40;
+      const barCount = scores.length;
+      const gap = 6;
+      const totalGaps = (barCount - 1) * gap;
+      const barWidth = Math.max(4, (width - totalGaps) / barCount);
+
+      let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="overflow-visible">`;
+
+      scores.forEach((rawScore, index) => {
+        const val = Math.min(Math.max(Number(rawScore) || 0, 0), 1);
+        const barH = Math.max(3, val * (height - 6));
+        const x = index * (barWidth + gap);
+        const y = height - barH;
+
+        let fill = "#22c55e"; // green below 0.5
+        if (val > 0.7) {
+          fill = "#ef4444"; // red above 0.7
+        } else if (val >= 0.5) {
+          fill = "#f59e0b"; // amber 0.5 to 0.7
+        }
+
+        svg += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="2" fill="${fill}" opacity="0.9">
+          <title>Frame ${index+1}: ${(val * 100).toFixed(0)}%</title>
+        </rect>`;
+      });
+
+      svg += `</svg>`;
+      container.innerHTML = svg;
+    }
+
+    /**
+     * Helper to render heatmaps with zero broken images
+     */
+    function renderHeatmap(container, path, alt) {
+      const cleanPath = path.startsWith('/static/') ? path.replace('/static/', '') : path;
+      container.innerHTML = `
+        <img src="${cleanPath}" alt="${alt}" class="w-full h-full object-contain rounded" onerror="if(this.src !== '${path}'){ this.src='${path}'; } else { this.style.display='none'; this.nextElementSibling.style.display='flex'; }">
+        <div class="hidden flex-col items-center justify-center text-center p-4 w-full h-full">
+          <svg class="w-6 h-6 text-slate-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-xs text-slate-400 font-mono">No heatmap available</span>
+        </div>
+      `;
+    }
+
+    function renderHeatmapFallback(container, message) {
+      container.innerHTML = `
+        <div class="text-center p-4">
+          <svg class="w-6 h-6 mx-auto text-slate-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-xs text-slate-400 font-mono">${message}</span>
+        </div>
+      `;
+    }
+
+    // Auto-init on page load
+    window.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const initialData = await loadData();
+        render(initialData);
+        startAutoRefresh();
+      } catch (e) {
+        console.error("Initialization error:", e);
+      }
+    });
+  </script>
+</body>
+</html>
