@@ -11,7 +11,10 @@ import uuid
 import logging
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, RedirectResponse
 
 # Ensure repo root is on sys.path
 _repo_root = str(Path(__file__).resolve().parent.parent)
@@ -28,6 +31,14 @@ from modules.decision.fusion import fuse
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="HackMUJ Deepfake and Synthetic Identity Detection API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
@@ -198,3 +209,103 @@ async def verify(document_image: UploadFile = File(...),
 @app.get("/api/verify/last")
 async def last_result():
     return _LAST_RESULT or {"error": "no verification run yet"}
+
+@app.post("/api/challenge")
+async def handle_challenge(request: Request):
+    global _PEPPER
+    if _PEPPER is None:
+        from shared.pepper_sss import generate_pepper
+        _PEPPER = generate_pepper()
+
+    form = await request.form()
+    action = form.get("action", "turn_left")
+    nonce = form.get("nonce", "4471")
+    date_str = form.get("date_str", "2026-09-11")
+    expected_name = "Priya Sharma"
+    ch = issue_challenge(expected_name)
+    ch.action = action
+    ch.nonce = nonce
+    ch.date_str = date_str
+
+    frames = []
+    try:
+        import cv2
+        import numpy as np
+        for key, value in form.items():
+            if key.startswith("frame_") and hasattr(value, "file"):
+                content = await value.read()
+                arr = np.frombuffer(content, np.uint8)
+                img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                if img is not None:
+                    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    frames.append(img_rgb)
+    except Exception as e:
+        logger.warning("Frame extraction error: %s", e)
+
+    tmp_dir = tempfile.gettempdir()
+    audio_file = form.get("audio")
+    audio_path = ""
+    if audio_file and hasattr(audio_file, "file"):
+        audio_path = os.path.join(tmp_dir, f"ch_aud_{uuid.uuid4().hex[:8]}.webm")
+        with open(audio_path, "wb") as f:
+            f.write(await audio_file.read())
+
+    loop = asyncio.get_event_loop()
+    deepfake_task = loop.run_in_executor(_executor, detect_face_deepfake, frames)
+    challenge_task = loop.run_in_executor(
+        _executor, run_challenge, "", audio_path, ch, expected_name
+    )
+
+    deepfake_res, challenge_results = await asyncio.gather(deepfake_task, challenge_task)
+
+    fused = fuse(10.0, [deepfake_res] + challenge_results)
+    response = {
+        "ok": True,
+        "existing": {"ocr": "clean", "signature": "valid", "ela": "clear"},
+        "lines": fused["lines"],
+        "final": {
+            "score": fused["score"],
+            "tier": fused["tier"],
+            "floors_applied": fused["floors_applied"],
+        },
+        "summary": build_officer_summary(fused),
+    }
+
+    db = sqlite3.connect("audit.db")
+    db.row_factory = sqlite3.Row
+    append_entry(db, _PEPPER, response)
+    db.close()
+
+    _LAST_RESULT.clear()
+    _LAST_RESULT.update(response)
+    return response
+
+# Serve frontend static assets directly on the orchestrator port
+_static_dir = Path(__file__).resolve().parent.parent / "frontend" / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+    @app.get("/")
+    def index():
+        return RedirectResponse(url="/dashboard.html")
+
+    @app.get("/dashboard.html")
+    def dashboard_page():
+        return FileResponse(str(_static_dir / "dashboard.html"))
+
+    @app.get("/capture.html")
+    def capture_page():
+        return FileResponse(str(_static_dir / "capture.html"))
+
+    @app.get("/app.js")
+    def app_js_file():
+        return FileResponse(str(_static_dir / "app.js"))
+
+    @app.get("/verify_sample.json")
+    def sample_flagged_file():
+        return FileResponse(str(_static_dir / "verify_sample.json"))
+
+    @app.get("/verify_sample_clear.json")
+    def sample_clear_file():
+        return FileResponse(str(_static_dir / "verify_sample_clear.json"))
+
