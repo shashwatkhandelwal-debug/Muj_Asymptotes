@@ -97,7 +97,7 @@ Open these tabs in a clean Chrome profile before judges arrive:
 > *We built **Asymptotes**, an edge-first defense station that detects deepfakes, synthetic speech, and GenAI documents in under 2.5 seconds with zero cloud reliance."*
 
 ### Speaker 2: Teammate AI/ML (0:25 – 0:55) — Forensic Channels & Fusion
-> *"Notice the multi-modal defense here: we evaluate radial FFT and CLIP linear probes for diffusion artifacts, per-frame facial warping, and AASIST voice anti-spoofing.*  
+> *"Notice the multi-modal defense here: we evaluate radial FFT and CLIP linear probes for diffusion artifacts, per-frame facial warping, and Formula A MFCC acoustic voice anti-spoofing.*  
 > *Notice our anti-dilution floor in action: when a deepfake attack occurs, a HARD hit locks the verdict to FLAGGED. In a military or immigration checkpoint, an attacker cannot dilute high-confidence deepfakes by providing clean documents."*
 
 ### Speaker 3: Teammate Frontend (0:55 – 1:25) — Edge Performance & Officer Audit Trail

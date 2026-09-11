@@ -49,6 +49,7 @@ SIGNAL_WEIGHTS: dict[SignalId, float] = {
     SignalId.ACTIVE_LIVENESS: 15.0,
     SignalId.ELA:             15.0,
     SignalId.EXIF:            10.0,
+    SignalId.CROSSFIELD:      15.0,
 }
 
 SIGNAL_TRIGGER: dict[SignalId, float] = {
@@ -59,6 +60,7 @@ SIGNAL_TRIGGER: dict[SignalId, float] = {
     SignalId.ACTIVE_LIVENESS: 0.50,
     SignalId.ELA:             0.50,
     SignalId.EXIF:            0.50,
+    SignalId.CROSSFIELD:      0.50,
 }
 
 HARD_SIGNALS: set[SignalId] = {

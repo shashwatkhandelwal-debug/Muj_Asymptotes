@@ -28,6 +28,7 @@ from shared.preprocessing import clahe_rgb, mean_brightness, LOW_LIGHT_THRESHOLD
 from modules.forensics.genai_detector import detect_genai_document
 from modules.forensics.ela import score_document_ela
 from modules.forensics.exif import score_document_exif
+from modules.aadhaar.validator import score_aadhaar_validation
 from modules.face.deepfake_detector import detect_face_deepfake
 from modules.face.challenge import issue_challenge, run_challenge, _decode_frames
 from modules.decision.fusion import fuse
@@ -42,8 +43,8 @@ MODEL_PROVENANCE = {
                      "fallback": "Laplacian variance + temporal consistency",
                      "calibration": "Platt scaling (LogisticRegression)",
                      "samples": "fit on real_faces vs deepfake_faces dataset"},
-    "voice_spoof":  {"primary": "AASIST RawNet2 (ONNX)",
-                     "fallback": "Spectral flatness + energy heuristic",
+    "voice_spoof":  {"primary": "Formula A (MFCC Delta Variance + Spectral Flatness)",
+                     "fallback": "Formula A / Spectral Energy Heuristic",
                      "calibration": "Platt scaling (LogisticRegression)",
                      "samples": "fit on real_audio vs spoofed_audio dataset"},
     "challenge":    {"primary": "MediaPipe FaceMesh (468 landmarks)",
@@ -66,6 +67,10 @@ MODEL_PROVENANCE = {
                     "samples": "N/A — rule-based DCT recompression error"},
     "exif":        {"primary": "PIL EXIF tag inspection",
                     "fallback": "N/A", "calibration": "rule-based", "samples": "N/A"},
+    "crossfield":  {"primary": "Verhoeff D5 Checksum + UIDAI RSA-2048 QR Cross-Check",
+                    "fallback": "Regex format validation",
+                    "calibration": "Deterministic mathematical checksum",
+                    "samples": "N/A — exact dihedral group D5 checksum"},
 }
 
 
@@ -230,6 +235,11 @@ def build_signal_explanation(signal: str, line: dict) -> str:
             ("Suspicious metadata — sensor data absent or inconsistent."
              if triggered else "Camera sensor metadata present and consistent.")
         ),
+        "crossfield": (
+            "Aadhaar document validation: " +
+            ("UID checksum failure, invalid QR signature, or field inconsistency detected."
+             if triggered else "Aadhaar UID structure, Verhoeff checksum, and layout verified.")
+        ),
         "watchlist": (
             "Subject identity matched against the watchlist database. "
             "This is an automatic HARD flag regardless of other signals."
@@ -294,16 +304,17 @@ async def verify(document_image: UploadFile = File(...),
     frames = [clahe_rgb(f) for f in raw_frames]
     is_low_light = any(mean_brightness(f) < LOW_LIGHT_THRESHOLD for f in frames) if frames else False
 
-    # 5. Fire A, B, C, D (ELA/EXIF) in PARALLEL
-    genai_task     = loop.run_in_executor(_executor, detect_genai_document, doc_path)
-    deepfake_task  = loop.run_in_executor(_executor, detect_face_deepfake, frames)
-    ela_task       = loop.run_in_executor(_executor, score_document_ela, doc_path)
-    exif_task      = loop.run_in_executor(_executor, score_document_exif, doc_path)
-    challenge_task = loop.run_in_executor(
+    # 5. Fire A, B, C, D (ELA/EXIF/Aadhaar) in PARALLEL
+    genai_task      = loop.run_in_executor(_executor, detect_genai_document, doc_path)
+    deepfake_task   = loop.run_in_executor(_executor, detect_face_deepfake, frames)
+    ela_task        = loop.run_in_executor(_executor, score_document_ela, doc_path)
+    exif_task       = loop.run_in_executor(_executor, score_document_exif, doc_path)
+    crossfield_task = loop.run_in_executor(_executor, score_aadhaar_validation, doc_path)
+    challenge_task  = loop.run_in_executor(
         _executor, run_challenge, video_path, audio_path, ch, ocr_name)
 
-    genai_res, deepfake_res, ela_res, exif_res, challenge_results = await asyncio.gather(
-        genai_task, deepfake_task, ela_task, exif_task, challenge_task)
+    genai_res, deepfake_res, ela_res, exif_res, crossfield_res, challenge_results = await asyncio.gather(
+        genai_task, deepfake_task, ela_task, exif_task, crossfield_task, challenge_task)
 
     if is_low_light and hasattr(deepfake_res, "evidence") and isinstance(deepfake_res.evidence, dict):
         deepfake_res.evidence["low_light_warning"] = True
@@ -332,13 +343,13 @@ async def verify(document_image: UploadFile = File(...),
                 asr_result.raw_score > SIGNAL_TRIGGER[SignalId.NAME_MATCH])
 
     # Cache Step 1 document signals for subsequent Step 2 challenge fusion
-    _LAST_DOC_RESULTS["signals"] = [genai_res, ela_res, exif_res]
+    _LAST_DOC_RESULTS["signals"] = [genai_res, ela_res, exif_res, crossfield_res]
     _LAST_DOC_RESULTS["ocr_name"] = ocr_name
     _LAST_DOC_RESULTS["existing_result"] = existing_result
     _LAST_DOC_RESULTS["existing_score"] = existing_score
 
     # 6. Fuse everything
-    all_new = [genai_res, deepfake_res, ela_res, exif_res] + challenge_results
+    all_new = [genai_res, deepfake_res, ela_res, exif_res, crossfield_res] + challenge_results
     fused = fuse(existing_score, all_new)
 
     # Surface watchlist result from existing pipeline
@@ -506,7 +517,7 @@ async def handle_challenge(request: Request):
 
     if doc_signals:
         genai_doc_sig = [s for s in doc_signals if s.signal == SignalId.GENAI_DOC]
-        forensics_sigs = [s for s in doc_signals if s.signal in (SignalId.ELA, SignalId.EXIF)]
+        forensics_sigs = [s for s in doc_signals if s.signal in (SignalId.ELA, SignalId.EXIF, SignalId.CROSSFIELD)]
         all_signals = genai_doc_sig + [deepfake_res] + forensics_sigs + challenge_results
     else:
         all_signals = [deepfake_res] + challenge_results
@@ -575,7 +586,11 @@ if _static_dir.exists():
 
     @app.get("/")
     def index():
-        return RedirectResponse(url="/upload.html")
+        return FileResponse(str(_static_dir / "index.html"))
+
+    @app.get("/index.html")
+    def index_page():
+        return FileResponse(str(_static_dir / "index.html"))
 
     @app.get("/upload.html")
     def upload_page():

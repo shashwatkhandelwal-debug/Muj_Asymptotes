@@ -473,23 +473,27 @@
       </div>
     </div>
 
-    <!-- Terminal key action cluster -->
+    <!-- Step indicator and terminal action cluster -->
     <div style="display: flex; align-items: center; gap: 8px;">
-      <div id="live-indicator" class="inline-flex items-center gap-1" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; padding: 5px 10px; background: var(--bg-inset); border-radius: 4px; border: 1px solid var(--border-hairline);">
+      <div style="display: flex; align-items: center; gap: 6px; margin-right: 8px;">
+        <span class="mono" style="font-size: 11px; padding: 4px 8px; border-radius: 12px; background: var(--clear-dim); color: var(--clear);">✓ Doc</span>
+        <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">→</span>
+        <span class="mono" style="font-size: 11px; padding: 4px 8px; border-radius: 12px; background: var(--clear-dim); color: var(--clear);">✓ Biometrics</span>
+        <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">→</span>
+        <span class="mono" style="font-size: 11px; padding: 4px 8px; border-radius: 12px; background: var(--accent-dim); color: var(--accent-blue); border: 1px solid rgba(56,189,248,0.3);">3. Audit Report</span>
+      </div>
+      <div id="live-indicator" class="inline-flex items-center gap-1" style="display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; padding: 5px 8px; background: var(--bg-inset); border-radius: 4px; border: 1px solid var(--border-hairline);">
         <span id="live-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
         <span id="live-label" class="text-xs text-slate-400 mono" style="font-size: 11px; color: var(--text-secondary);">LIVE</span>
       </div>
-      <a href="capture.html" class="btn-terminal" title="Launch Edge Capture Client">
-        <span>[CAPTURE CLIENT]</span>
-      </a>
       <button id="btnRepoll" class="btn-terminal" onclick="handleRepoll()">
-        <span>[RE-POLL BACKEND]</span>
+        <span>[RE-POLL]</span>
       </button>
       <button id="btnLoadFixture" class="btn-pill btn-pill-primary" onclick="handleLoadFixture()">
-        <span>[LOAD FIXTURE]</span>
+        <span>[FIXTURE]</span>
       </button>
       <button id="btnDemoClear" class="btn-pill btn-pill-clear" onclick="handleDemoClear()">
-        <span>[DEMO: CLEAR]</span>
+        <span>[CLEAR]</span>
       </button>
     </div>
   </header>
@@ -731,7 +735,7 @@
 
         <div style="border-top: 1px solid var(--border-hairline); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
           <span id="voiceMethod" class="mono" style="font-size: 11px; color: var(--text-tertiary);">method: mfcc_heuristic</span>
-          <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">AASIST / SPECTRAL</span>
+          <span class="mono" style="font-size: 11px; color: var(--text-tertiary);">FORMULA A / MFCC SPECTRAL</span>
         </div>
         <p id="voiceExplanation" class="text-xs text-slate-400 mt-2 leading-relaxed" style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px; line-height: 1.4; border-top: 1px solid var(--border-hairline); padding-top: 6px;"></p>
       </section>
