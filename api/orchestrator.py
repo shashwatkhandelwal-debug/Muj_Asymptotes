@@ -162,25 +162,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def _save_uploads(document_image: UploadFile, video: UploadFile | None, audio: UploadFile | None) -> tuple[str, str, str]:
+def _save_uploads(document_image: UploadFile, qr_image: UploadFile | None = None, video: UploadFile | None = None, audio: UploadFile | None = None) -> tuple[str, str, str, str]:
     tmp_dir = tempfile.gettempdir()
     doc_path = os.path.join(tmp_dir, f"doc_{uuid.uuid4().hex[:8]}_{document_image.filename or 'doc.png'}")
     with open(doc_path, "wb") as f:
         f.write(document_image.file.read())
 
+    qr_path = ""
+    if qr_image is not None and getattr(qr_image, "file", None):
+        qr_path = os.path.join(tmp_dir, f"qr_{uuid.uuid4().hex[:8]}_{qr_image.filename or 'qr.png'}")
+        with open(qr_path, "wb") as f:
+            f.write(qr_image.file.read())
+
     video_path = ""
-    if video is not None:
+    if video is not None and getattr(video, "file", None):
         video_path = os.path.join(tmp_dir, f"vid_{uuid.uuid4().hex[:8]}_{video.filename or 'vid.mp4'}")
         with open(video_path, "wb") as f:
             f.write(video.file.read())
 
     audio_path = ""
-    if audio is not None:
+    if audio is not None and getattr(audio, "file", None):
         audio_path = os.path.join(tmp_dir, f"aud_{uuid.uuid4().hex[:8]}_{audio.filename or 'aud.wav'}")
         with open(audio_path, "wb") as f:
             f.write(audio.file.read())
 
-    return doc_path, video_path, audio_path
+    return doc_path, qr_path, video_path, audio_path
 
 def build_signal_explanation(signal: str, line: dict) -> str:
     """
@@ -269,6 +275,7 @@ def build_officer_summary(fused: dict) -> str:
 
 @app.post("/api/verify")
 async def verify(document_image: UploadFile = File(...),
+                 qr_image: UploadFile = File(None),
                  video: UploadFile = File(None),
                  audio: UploadFile = File(None)):
     global _PEPPER
@@ -279,7 +286,7 @@ async def verify(document_image: UploadFile = File(...),
     loop = asyncio.get_event_loop()
 
     # 1. Save uploads to temp paths
-    doc_path, video_path, audio_path = _save_uploads(document_image, video, audio)
+    doc_path, qr_path, video_path, audio_path = _save_uploads(document_image, qr_image, video, audio)
 
     # 2. EXISTING pipeline — unchanged. Produces ocr_name and existing_score.
     existing_result = run_existing_pipeline(doc_path)
@@ -309,7 +316,7 @@ async def verify(document_image: UploadFile = File(...),
     deepfake_task   = loop.run_in_executor(_executor, detect_face_deepfake, frames)
     ela_task        = loop.run_in_executor(_executor, score_document_ela, doc_path)
     exif_task       = loop.run_in_executor(_executor, score_document_exif, doc_path)
-    crossfield_task = loop.run_in_executor(_executor, score_aadhaar_validation, doc_path)
+    crossfield_task = loop.run_in_executor(_executor, score_aadhaar_validation, doc_path, qr_path)
     challenge_task  = loop.run_in_executor(
         _executor, run_challenge, video_path, audio_path, ch, ocr_name)
 

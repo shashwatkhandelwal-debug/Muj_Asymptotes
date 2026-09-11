@@ -564,55 +564,139 @@
     <!-- ========================================================= -->
     <!-- STAGE 1: DOCUMENT UPLOAD & FORENSICS -->
     <!-- ========================================================= -->
+        <!-- ========================================================= -->
+    <!-- STAGE 1: TWO-PHOTO AADHAAR & QR FORENSIC INGESTION -->
+    <!-- ========================================================= -->
     <section id="stage1" class="flow-view active">
-      <div style="max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;">
+      <div style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px;">
         
         <div class="panel">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <div class="eyebrow">STEP 1 OF 3 // DOCUMENT FORENSICS & VERIFICATION</div>
-            <span class="badge badge-clear">GENAI + ELA + EXIF + AADHAAR D5</span>
+            <div class="eyebrow">STEP 1 OF 3 // 2-PHOTO AADHAAR & QR FORENSICS</div>
+            <span class="badge badge-clear">FULL CARD + QR CLOSE-UP (RSA-2048)</span>
           </div>
-          <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px;">
-            Aadhaar & Identity Document Ingestion
+          <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+            Aadhaar & Secure QR Cryptographic Ingestion
           </h2>
-          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
-            Upload the applicant's official government ID image. The forensic pipeline will run frequency spectrum analysis, JPEG error level analysis, camera metadata checks, and Verhoeff D5 cryptographic checksum validation.
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;">
+            To guarantee 100% cryptographic verification against forgery, capture two sequential photos: (1) Full Aadhaar card for OCR & tamper forensics, and (2) high-resolution close-up of the Secure QR code.
           </p>
 
-          <!-- Upload Dropzone -->
-          <div class="upload-zone" id="uploadDropzone">
-            <input type="file" id="docFileInput" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
-            <div style="font-size: 28px; color: var(--accent-blue); margin-bottom: 8px;">📄</div>
-            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
-              Drag & Drop Aadhaar / ID Card here or <span style="color: var(--accent-blue); text-decoration: underline;">Browse</span>
-            </div>
-            <div class="mono" style="font-size: 11px; color: var(--text-tertiary);">
-              SUPPORTED: JPEG, PNG, WEBP (MAX 15MB)
-            </div>
+          <!-- Capture Mode Selector -->
+          <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button id="btnModeCam" class="btn-terminal" style="border-color: var(--accent-blue); color: var(--accent-blue); background: var(--accent-dim);" onclick="setDocInputMode('camera')">
+              <span>📷 Live Device Camera (2 Sequential Photos)</span>
+            </button>
+            <button id="btnModeUpload" class="btn-terminal" onclick="setDocInputMode('upload')">
+              <span>📁 Upload Files</span>
+            </button>
           </div>
 
-          <!-- Quick Test Samples -->
-          <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px;">
-            <span class="eyebrow" style="font-size: 10px;">PRESET SAMPLES:</span>
-            <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDoc('clean')">Clean Aadhaar</button>
-            <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDoc('tampered')">Spliced / Tampered Doc</button>
-            <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDoc('genai')">AI-Generated ID</button>
-          </div>
-
-          <!-- Preview & Action Container -->
-          <div id="docPreviewContainer" style="display: none; margin-top: 18px; border-top: 1px solid var(--border-hairline); padding-top: 18px;">
-            <div style="display: flex; gap: 16px; align-items: flex-start;">
-              <div style="width: 220px; height: 140px; background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                <img id="docPreviewImg" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          <!-- =================================================== -->
+          <!-- OPTION A: LIVE CAMERA 2-PHOTO SEQUENTIAL CAPTURE -->
+          <!-- =================================================== -->
+          <div id="docCameraSection">
+            <!-- Dynamic Prompt Banner -->
+            <div style="background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span class="eyebrow" id="camStepSubBadge" style="color: var(--accent-blue);">PHOTO 1 OF 2</span>
+                <div id="camStepInstruction" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 2px;">
+                  Position the FULL Aadhaar card within the frame
+                </div>
               </div>
-              <div style="flex: 1;">
-                <div id="docFileName" class="mono" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">doc.jpg</div>
-                <div id="docFileSize" class="mono" style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 14px;">142 KB</div>
-                <button id="btnVerifyDoc" class="btn-primary" onclick="submitDocVerify()">
-                  <span>[ANALYZE & VERIFY DOCUMENT]</span>
-                </button>
+              <div class="mono" style="font-size: 11px; color: var(--text-tertiary);">CAMERA READY</div>
+            </div>
+
+            <!-- Viewport with targeting reticles -->
+            <div style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid var(--border-hairline); border-radius: 6px; overflow: hidden; margin-bottom: 14px;">
+              <video id="docCamVideo" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+              <canvas id="docCamCanvas" style="display: none;"></canvas>
+
+              <!-- Reticle Overlay for Photo 1 (Card) -->
+              <div id="reticleCard" style="position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 82%; height: 75%; border: 2px dashed rgba(56,189,248,0.7); border-radius: 8px; box-shadow: 0 0 0 9999px rgba(7,10,14,0.45); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;">
+                  <span class="mono" style="font-size: 10px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px;">FULL AADHAAR CARD OUTLINE</span>
+                </div>
+              </div>
+
+              <!-- Reticle Overlay for Photo 2 (QR Close-Up) -->
+              <div id="reticleQR" style="position: absolute; inset: 0; pointer-events: none; display: none; align-items: center; justify-content: center;">
+                <div style="width: 220px; height: 220px; border: 2px solid var(--accent-teal); border-radius: 6px; box-shadow: 0 0 0 9999px rgba(7,10,14,0.55); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;">
+                  <span class="mono" style="font-size: 10px; color: var(--accent-teal); background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 4px;">TARGET QR CODE CLOSE-UP</span>
+                </div>
               </div>
             </div>
+
+            <!-- Capture Actions Bar -->
+            <div id="camControlButtons" style="display: flex; justify-content: space-between; align-items: center;">
+              <button class="btn-terminal" style="font-size: 11px;" onclick="resetCameraTwoPhoto()">
+                <span>[RESTART CAPTURE]</span>
+              </button>
+              <button id="btnCapturePhoto1" class="btn-primary" onclick="capturePhoto1Card()">
+                <span>[📸 CAPTURE PHOTO 1: FULL CARD]</span>
+              </button>
+              <button id="btnCapturePhoto2" class="btn-action" style="display: none;" onclick="capturePhoto2QR()">
+                <span>[📸 CAPTURE PHOTO 2: QR CLOSE-UP]</span>
+              </button>
+            </div>
+
+            <!-- Two-Photo Thumbnail Bar -->
+            <div id="capturedThumbnails" style="display: none; margin-top: 16px; background: var(--bg-inset); border: 1px solid var(--border-hairline); border-radius: 6px; padding: 12px 14px;">
+              <div class="eyebrow" style="margin-bottom: 8px;">CAPTURED DUAL-PHOTO ASSETS:</div>
+              <div style="display: flex; gap: 14px; align-items: center;">
+                <div style="width: 140px; height: 90px; background: #000; border: 1px solid var(--border-hairline); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                  <img id="thumbPhoto1" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div style="width: 90px; height: 90px; background: #000; border: 1px solid var(--border-hairline); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                  <img id="thumbPhoto2" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+                <div style="flex: 1;">
+                  <div class="mono" style="font-size: 12px; font-weight: 600; color: var(--clear);">✓ Photo 1 (Full Card) + Photo 2 (QR Close-up) Ready</div>
+                  <div class="mono" style="font-size: 11px; color: var(--text-tertiary); margin: 4px 0 10px 0;">Ready for multi-layer cryptographic signature verification.</div>
+                  <button id="btnSubmitTwoPhoto" class="btn-primary" onclick="submitDocVerify()">
+                    <span>[VERIFY AADHAAR & QR SIGNATURE]</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- =================================================== -->
+          <!-- OPTION B: FILE UPLOAD (FALLBACK & PRESETS) -->
+          <!-- =================================================== -->
+          <div id="docUploadSection" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+              
+              <!-- Slot 1: Full Card -->
+              <div class="upload-zone" id="dropzoneFull">
+                <input type="file" id="fileInputFull" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
+                <div style="font-size: 24px; color: var(--accent-blue); margin-bottom: 4px;">📄</div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">1. Full Aadhaar Card</div>
+                <div id="fullFileName" class="mono" style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">Click or Drag image</div>
+              </div>
+
+              <!-- Slot 2: Dedicated QR Code Close-up -->
+              <div class="upload-zone" id="dropzoneQR">
+                <input type="file" id="fileInputQR" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer;">
+                <div style="font-size: 24px; color: var(--accent-teal); margin-bottom: 4px;">🔲</div>
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-primary);">2. QR Code Close-up</div>
+                <div id="qrFileName" class="mono" style="font-size: 10px; color: var(--text-tertiary); margin-top: 2px;">Dedicated high-res QR (Optional)</div>
+              </div>
+
+            </div>
+
+            <!-- Quick Test Samples -->
+            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px;">
+              <span class="eyebrow" style="font-size: 10px;">PRESET SAMPLES:</span>
+              <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDual('clean')">Clean Aadhaar + QR</button>
+              <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDual('tampered')">Spliced / Tampered Doc</button>
+              <button class="btn-terminal" style="font-size: 11px; padding: 4px 8px;" onclick="loadPresetDual('genai')">AI-Generated ID</button>
+            </div>
+
+            <button id="btnVerifyUpload" class="btn-primary" onclick="submitDocVerify()">
+              <span>[ANALYZE & VERIFY DOCUMENT]</span>
+            </button>
           </div>
 
           <!-- In-flight Processing Banner -->
@@ -620,7 +704,7 @@
             <div class="spinner" style="margin-bottom: 10px;"></div>
             <div class="mono" style="font-size: 13px; color: var(--accent-blue); font-weight: 600;">EXECUTING MULTI-LAYER DOCUMENT FORENSICS...</div>
             <div class="mono" style="font-size: 11px; color: var(--text-tertiary); margin-top: 6px;">
-              FFT Radial Spectrum // ELA DCT Recompression // EXIF Hardware Tags // Aadhaar Verhoeff D5
+              FFT Radial Spectrum // ELA DCT Recompression // EXIF Hardware Tags // UIDAI RSA-2048 Signature
             </div>
           </div>
 
@@ -649,7 +733,7 @@
                 <div id="docExifScore" class="mono" style="font-size: 14px; font-weight: 600; margin-top: 4px;">--</div>
               </div>
               <div class="panel" style="padding: 10px 12px; background: var(--bg-inset);">
-                <div class="eyebrow" style="font-size: 9px;">AADHAAR D5 / QR</div>
+                <div class="eyebrow" style="font-size: 9px;">AADHAAR RSA & D5</div>
                 <div id="docAadhaarScore" class="mono" style="font-size: 14px; font-weight: 600; margin-top: 4px;">--</div>
               </div>
             </div>
@@ -671,7 +755,6 @@
       </div>
     </section>
 
-    <!-- ========================================================= -->
     <!-- STAGE 2: LIVE FACIAL LIVENESS VIDEO ACQUISITION -->
     <!-- ========================================================= -->
     <section id="stage2" class="flow-view">
@@ -1644,6 +1727,180 @@
       await initMediaPipe();
       advanceToStage(1);
     });
+  
+    // -----------------------------------------------------------
+    // STAGE 1 TWO-PHOTO LOGIC
+    // -----------------------------------------------------------
+    let docCamStream = null;
+    let photo1Blob = null;
+    let photo2Blob = null;
+
+    async function initDocCamera() {
+      try {
+        if (!docCamStream) {
+          docCamStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+          });
+        }
+        const v = document.getElementById("docCamVideo");
+        if (v) {
+          v.srcObject = docCamStream;
+          await v.play();
+        }
+      } catch (e) {
+        console.warn("Doc camera stream error:", e);
+      }
+    }
+
+    function setDocInputMode(mode) {
+      document.getElementById("btnModeCam").style.borderColor = mode === 'camera' ? 'var(--accent-blue)' : 'var(--border-hairline)';
+      document.getElementById("btnModeCam").style.background = mode === 'camera' ? 'var(--accent-dim)' : 'var(--bg-panel)';
+      document.getElementById("btnModeUpload").style.borderColor = mode === 'upload' ? 'var(--accent-blue)' : 'var(--border-hairline)';
+      document.getElementById("btnModeUpload").style.background = mode === 'upload' ? 'var(--accent-dim)' : 'var(--bg-panel)';
+
+      document.getElementById("docCameraSection").style.display = mode === 'camera' ? 'block' : 'none';
+      document.getElementById("docUploadSection").style.display = mode === 'upload' ? 'block' : 'none';
+
+      if (mode === 'camera') {
+        initDocCamera();
+      } else {
+        stopDocCamera();
+      }
+    }
+
+    function stopDocCamera() {
+      if (docCamStream) {
+        docCamStream.getTracks().forEach(t => { try { t.stop(); } catch(_) {} });
+        docCamStream = null;
+      }
+    }
+
+    function capturePhoto1Card() {
+      const v = document.getElementById("docCamVideo");
+      const c = document.getElementById("docCamCanvas");
+      c.width = v.videoWidth || 1280;
+      c.height = v.videoHeight || 720;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+
+      c.toBlob((blob) => {
+        photo1Blob = blob;
+        document.getElementById("thumbPhoto1").src = URL.createObjectURL(blob);
+        
+        // Advance camera prompt to Photo 2 (QR Close-Up)
+        document.getElementById("camStepSubBadge").innerText = "PHOTO 2 OF 2";
+        document.getElementById("camStepSubBadge").style.color = "var(--accent-teal)";
+        document.getElementById("camStepInstruction").innerText = "Now ZOOM IN on the QR code specifically";
+        document.getElementById("reticleCard").style.display = "none";
+        document.getElementById("reticleQR").style.display = "flex";
+        document.getElementById("btnCapturePhoto1").style.display = "none";
+        document.getElementById("btnCapturePhoto2").style.display = "inline-flex";
+      }, "image/jpeg", 0.95);
+    }
+
+    function capturePhoto2QR() {
+      const v = document.getElementById("docCamVideo");
+      const c = document.getElementById("docCamCanvas");
+      c.width = v.videoWidth || 1280;
+      c.height = v.videoHeight || 720;
+      const ctx = c.getContext("2d");
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+
+      c.toBlob((blob) => {
+        photo2Blob = blob;
+        document.getElementById("thumbPhoto2").src = URL.createObjectURL(blob);
+        document.getElementById("capturedThumbnails").style.display = "block";
+        document.getElementById("btnCapturePhoto2").style.display = "none";
+      }, "image/jpeg", 0.95);
+    }
+
+    function resetCameraTwoPhoto() {
+      photo1Blob = null;
+      photo2Blob = null;
+      document.getElementById("camStepSubBadge").innerText = "PHOTO 1 OF 2";
+      document.getElementById("camStepSubBadge").style.color = "var(--accent-blue)";
+      document.getElementById("camStepInstruction").innerText = "Position the FULL Aadhaar card within the frame";
+      document.getElementById("reticleCard").style.display = "flex";
+      document.getElementById("reticleQR").style.display = "none";
+      document.getElementById("btnCapturePhoto1").style.display = "inline-flex";
+      document.getElementById("btnCapturePhoto2").style.display = "none";
+      document.getElementById("capturedThumbnails").style.display = "none";
+    }
+
+    // Dropzone listeners
+    document.getElementById("fileInputFull")?.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        photo1Blob = e.target.files[0];
+        document.getElementById("fullFileName").innerText = photo1Blob.name;
+      }
+    });
+    document.getElementById("fileInputQR")?.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        photo2Blob = e.target.files[0];
+        document.getElementById("qrFileName").innerText = photo2Blob.name;
+      }
+    });
+
+    async function loadPresetDual(type) {
+      // Load real card and sample QR
+      try {
+        const resCard = await fetch("/static/data/images/real_doc_1.png").catch(() => null);
+        // Create canvas card
+        const canvas = document.createElement("canvas");
+        canvas.width = 600; canvas.height = 380;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#0f172a"; ctx.fillRect(0,0,600,380);
+        ctx.fillStyle = "#38bdf8"; ctx.font = "bold 18px monospace";
+        ctx.fillText("GOVERNMENT OF INDIA / AADHAAR", 30, 45);
+        ctx.fillStyle = "#e2e8f0"; ctx.font = "14px monospace";
+        ctx.fillText("Name: Priya Sharma", 30, 100);
+        ctx.fillText("DOB: 12/04/1994", 30, 130);
+        ctx.fillText("Gender: Female", 30, 160);
+        ctx.fillStyle = "#38bdf8"; ctx.font = "bold 20px monospace";
+        ctx.fillText("1234 5678 9010", 30, 240);
+
+        canvas.toBlob(async (blob) => {
+          photo1Blob = new File([blob], "aadhaar_card.jpg", { type: "image/jpeg" });
+          document.getElementById("fullFileName").innerText = photo1Blob.name;
+
+          // Fetch sample QR image
+          try {
+            const qrRes = await fetch("/static/aadhaar_qr_sample.png");
+            if (qrRes.ok) {
+              const qrBlob = await qrRes.blob();
+              photo2Blob = new File([qrBlob], "qr_closeup.png", { type: "image/png" });
+              document.getElementById("qrFileName").innerText = photo2Blob.name;
+            }
+          } catch(_) {}
+        }, "image/jpeg");
+      } catch(e) {}
+    }
+
+    async function submitDocVerify() {
+      if (!photo1Blob && !selectedDocFile) return;
+      document.getElementById("docProcessingState").style.display = "block";
+
+      const formData = new FormData();
+      formData.append("document_image", photo1Blob || selectedDocFile);
+      if (photo2Blob) {
+        formData.append("qr_image", photo2Blob);
+      }
+
+      try {
+        const res = await fetch("/api/verify", { method: "POST", body: formData });
+        if (res.ok) {
+          const data = await res.json();
+          docVerificationResult = data;
+          renderDocResultInline(data);
+        }
+      } catch (err) {
+        console.warn("API verify error:", err);
+      } finally {
+        document.getElementById("docProcessingState").style.display = "none";
+      }
+    }
+
   </script>
 </body>
 </html>
