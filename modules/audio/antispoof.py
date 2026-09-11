@@ -75,6 +75,14 @@ def _load_audio_signal(path: str):
         chunks = []
         for frame in container.decode(audio_stream):
             arr = frame.to_ndarray()
+            if arr.dtype == np.int16:
+                arr = arr.astype(np.float32) / 32768.0
+            elif arr.dtype == np.int32:
+                arr = arr.astype(np.float32) / 2147483648.0
+            elif arr.dtype == np.uint8:
+                arr = (arr.astype(np.float32) - 128.0) / 128.0
+            else:
+                arr = arr.astype(np.float32)
             chunks.append(arr)
         if chunks:
             data = np.concatenate(chunks, axis=-1)

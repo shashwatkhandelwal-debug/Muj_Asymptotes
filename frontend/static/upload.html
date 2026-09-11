@@ -1295,16 +1295,31 @@
       }
     }
 
+    // Stage 1 variables
+    let docCamStream = null;
+    let photo1Blob = null;
+    let photo2Blob = null;
+
     function restartFlow() {
       stopCameraTracks();
       selectedDocFile = null;
+      photo1Blob = null;
+      photo2Blob = null;
       docVerificationResult = null;
       capturedFrames = [];
       recordedAudioChunks = [];
-      document.getElementById("docPreviewContainer").style.display = "none";
-      document.getElementById("docResultInline").style.display = "none";
-      document.getElementById("docProcessingState").style.display = "none";
-      document.getElementById("docFileInput").value = "";
+      const prevC = document.getElementById("docPreviewContainer");
+      if (prevC) prevC.style.display = "none";
+      const resIn = document.getElementById("docResultInline");
+      if (resIn) resIn.style.display = "none";
+      const procS = document.getElementById("docProcessingState");
+      if (procS) procS.style.display = "none";
+      const fi = document.getElementById("docFileInput");
+      if (fi) fi.value = "";
+      const fif = document.getElementById("fileInputFull");
+      if (fif) fif.value = "";
+      const fiq = document.getElementById("fileInputQR");
+      if (fiq) fiq.value = "";
       advanceToStage(1);
     }
 
@@ -1314,21 +1329,25 @@
     const dropzone = document.getElementById("uploadDropzone");
     const fileInput = document.getElementById("docFileInput");
 
-    fileInput.addEventListener("change", (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleSelectedFile(e.target.files[0]);
-      }
-    });
+    if (fileInput) {
+      fileInput.addEventListener("change", (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleSelectedFile(e.target.files[0]);
+        }
+      });
+    }
 
-    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
-    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropzone.classList.remove("dragover");
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleSelectedFile(e.dataTransfer.files[0]);
-      }
-    });
+    if (dropzone) {
+      dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+      dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleSelectedFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
 
     function handleSelectedFile(file) {
       selectedDocFile = file;
@@ -1880,9 +1899,6 @@
     // -----------------------------------------------------------
     // STAGE 1 TWO-PHOTO LOGIC
     // -----------------------------------------------------------
-    let docCamStream = null;
-    let photo1Blob = null;
-    let photo2Blob = null;
 
     async function initDocCamera() {
       const banner = document.getElementById("docCamErrorBanner");

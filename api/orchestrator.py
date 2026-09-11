@@ -543,12 +543,13 @@ async def last_result():
 
 @app.get("/api/challenge/new")
 @app.get("/api/challenge")
-async def get_new_challenge(name: str = "Priya Sharma"):
+async def get_new_challenge(name: str = ""):
     """
     Issue a dynamic single-use session challenge with a cryptographically fresh nonce.
     """
     t_start = time.perf_counter()
-    ch = issue_challenge(name)
+    expected_name = name.strip() if name and name.strip() else (_LAST_DOC_RESULTS.get("ocr_name") or "")
+    ch = issue_challenge(expected_name)
     payload = {
         "ok": True,
         "action": ch.action,

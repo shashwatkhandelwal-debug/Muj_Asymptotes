@@ -120,20 +120,16 @@ def _score_frame(frame: np.ndarray) -> float:
         gray = frame.astype(float)
 
     lap_var = _laplacian_var(gray.astype(np.float64))
-    if lap_var > 1000.0:
-        # Extreme high-frequency noise / artifact frames
-        score = min(1.0, lap_var / 2500.0)
-    elif lap_var < 40.0:
-        # Uniform smooth synthetic canvas
-        score = max(0.05, lap_var / 200.0)
+    if lap_var > 1500.0:
+        # Extreme high-frequency artificial grid / checkerboard artifacts
+        score = min(1.0, 0.60 + (lap_var - 1500.0) / 2000.0)
+    elif lap_var < 20.0:
+        # Super-smooth synthetic canvas / uniform render
+        score = min(0.85, 0.40 + (20.0 - lap_var) * 0.02)
     else:
-        # Normal texture range: low variance = blurry
-        z = -(lap_var - 80.0) / 40.0
-        if z >= 0:
-            score = 1.0 / (1.0 + np.exp(-z))
-        else:
-            ez = np.exp(z)
-            score = ez / (1.0 + ez)
+        # Natural optical camera capture texture range (30..1200)
+        # Centered around clear baseline 0.10..0.20
+        score = 0.12 + 0.10 * np.exp(-((lap_var - 150.0) ** 2) / (2 * (300.0 ** 2)))
     return float(np.clip(score, 0.0, 1.0))
 
 def _temporal_consistency_score(frames: list) -> float:
