@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 
 # Ensure repo root is on sys.path
 _repo_root = str(Path(__file__).resolve().parent.parent)
@@ -546,4 +546,9 @@ if _static_dir.exists():
     @app.get("/verify_sample_clear.json")
     def sample_clear_file():
         return FileResponse(str(_static_dir / "verify_sample_clear.json"))
+
+    @app.get("/favicon.ico")
+    def favicon():
+        return Response(status_code=204)
+
 
