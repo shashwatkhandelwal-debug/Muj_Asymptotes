@@ -2,6 +2,15 @@
   "existing": {},
   "lines": [
     {
+      "signal": "ela",
+      "penalty": 4.0,
+      "label": "No recompression anomaly",
+      "confidence": 0.12,
+      "severity": "soft",
+      "triggered": false,
+      "evidence": {}
+    },
+    {
       "signal": "genai_doc",
       "penalty": 3.75,
       "label": "Document appears genuine",
@@ -68,5 +77,5 @@
     "tier": "flagged",
     "floors_applied": ["face_deepfake"]
   },
-  "summary": "Final verdict: FLAGGED (score 82.0). face_deepfake: Deepfake artifacts detected (confidence 0.91). Anti-dilution floor applied: face_deepfake."
+  "summary": "Officer summary: Deepfake face artifacts detected with high confidence (0.91). Anti-dilution floor applied. All other signals clear. Final verdict: FLAGGED."
 }

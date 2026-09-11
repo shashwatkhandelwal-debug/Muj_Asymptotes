@@ -1,259 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VAJRA-SHIELD | Live Active Biometric Challenge Capture</title>
-  <!-- Google Fonts -->
+  <title>SENTINEL // Edge Challenge Capture Client</title>
+
+  <!-- Typography with offline-safe system fallback stacks -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS via CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- MediaPipe Face Detection for low-bandwidth client-side face cropping -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <!-- MediaPipe Face Detection CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js" crossorigin="anonymous"></script>
 
   <style>
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #080c14;
-      color: #f1f5f9;
+    :root {
+      /* Canvas — matte obsidian, tonally layered */
+      --bg-void:         #070a0e;   /* page background */
+      --bg-panel:        #0c1017;   /* card surface */
+      --bg-panel-raised: #121620;   /* hover / nested surface */
+      --bg-inset:        #060810;   /* recessed areas */
+
+      /* Borders */
+      --border-hairline: rgba(255,255,255,0.07);
+      --border-strong:   rgba(255,255,255,0.16);
+
+      /* Text */
+      --text-primary:    #e8eaee;
+      --text-secondary:  #9aa0ac;
+      --text-tertiary:   #5b6270;
+
+      /* Neutral tech accent */
+      --accent-blue:     #38bdf8;
+      --accent-teal:     #2dd4bf;
+      --accent-dim:      rgba(56,189,248,0.12);
+
+      /* Semantic */
+      --clear:           #10b981;
+      --clear-dim:       rgba(16,185,129,0.12);
+      --review:          #f59e0b;
+      --review-dim:      rgba(245,158,11,0.12);
+      --flagged:         #ef4444;
+      --flagged-dim:     rgba(239,68,68,0.14);
+
+      /* Fonts */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
-    .font-mono {
-      font-family: 'JetBrains Mono', monospace;
+
+    body {
+      background:
+        radial-gradient(ellipse 900px 500px at 12% -8%, rgba(56,189,248,0.06), transparent 60%),
+        var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    .defense-card {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(51, 65, 85, 0.6);
-      border-radius: 0.75rem;
-      backdrop-filter: blur(12px);
+
+    .mono {
+      font-family: var(--font-mono);
+      font-feature-settings: "tnum" 1;
+      font-variant-numeric: tabular-nums;
     }
-    .tactical-grid {
-      background-image: radial-gradient(rgba(30, 41, 59, 0.4) 1px, transparent 0);
-      background-size: 24px 24px;
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      font-weight: 600;
     }
-    .video-mirrored {
-      transform: scaleX(-1);
+
+    /* Top navigation header */
+    header {
+      height: 56px;
+      background: var(--bg-void);
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
     }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.8; }
-      50% { opacity: 0.3; }
+
+    /* Ghost link per §5.9 */
+    .link-ghost {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 140ms ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .recording-pulse {
-      animation: pulseGlow 1.2s infinite ease-in-out;
+    .link-ghost:hover {
+      color: var(--text-primary);
+    }
+
+    /* Terminal Key Button */
+    .btn-terminal {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+      text-decoration: none;
+    }
+    .btn-terminal:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+      background: var(--bg-panel-raised);
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 24px 28px;
+      position: relative;
+      transition: border-color 160ms ease;
+    }
+    .panel::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 12px;
+      right: 12px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      pointer-events: none;
+    }
+
+    /* Recessed inline mono block */
+    .recessed-block {
+      background: var(--bg-inset);
+      padding: 10px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hairline);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--accent-blue);
+      word-break: break-all;
+    }
+
+    /* Recording dot pulse */
+    .rec-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--flagged);
+      animation: recPulse 1.2s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes recPulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    /* CSS-only processing spinner */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--border-hairline);
+      border-top-color: var(--accent-blue);
+      border-radius: 50%;
+      animation: spin 700ms linear infinite;
+      margin: 0 auto 16px auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    main {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    #capture-root {
+      width: 100%;
+      max-width: 580px;
+    }
+
+    footer {
+      height: 40px;
+      border-top: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      color: var(--text-tertiary);
+      font-size: 11px;
+      font-family: var(--font-mono);
     }
   </style>
 </head>
-<body class="min-h-screen tactical-grid text-slate-100 flex flex-col justify-between">
+<body>
 
-  <!-- HEADER -->
-  <header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-50 px-4 sm:px-6 py-3">
-    <div class="max-w-4xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <a href="dashboard.html" class="text-slate-400 hover:text-white transition flex items-center space-x-1 text-xs font-mono">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          <span>Dashboard</span>
-        </a>
-        <span class="text-slate-600">|</span>
-        <div class="flex items-center space-x-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-          <h1 class="text-sm font-bold tracking-tight text-white uppercase font-mono">Live Challenge Capture</h1>
-        </div>
-      </div>
-      <div class="flex items-center space-x-2 text-[11px] font-mono text-slate-400">
-        <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700">Bandwidth Opt: &lt;200KB</span>
-      </div>
+  <header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <a href="dashboard.html" class="link-ghost">
+        ← <span>View Dashboard</span>
+      </a>
+      <span style="color: var(--border-strong);">|</span>
+      <span class="mono" style="font-size: 12px; color: var(--text-tertiary);">EDGE CHALLENGE CLIENT</span>
+    </div>
+    <div class="mono" style="font-size: 11px; color: var(--text-tertiary);">
+      PAYLOAD BUDGET: &lt;200KB
     </div>
   </header>
 
-  <!-- MAIN CAPTURE VIEW -->
-  <main class="max-w-4xl mx-auto px-4 py-8 w-full flex-grow flex flex-col justify-center items-center">
-
-    <!-- CAPTURE CONTAINER -->
-    <div class="w-full max-w-2xl defense-card p-6 shadow-2xl relative overflow-hidden">
-
-      <!-- ========================================== -->
-      <!-- STATE 1: IDLE / CHALLENGE CARD -->
-      <!-- ========================================== -->
-      <div id="stateIdle" class="space-y-6">
-        <div class="text-center space-y-2">
-          <span class="text-xs font-mono px-2 py-1 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-800/40 uppercase tracking-wider font-semibold">Active Liveness & Voice Challenge</span>
-          <h2 class="text-xl font-extrabold text-white">Identity Verification Challenge</h2>
-          <p class="text-xs text-slate-400 max-w-md mx-auto">
-            You will be asked to perform a randomized physical movement and speak the verified phrase aloud during a 5-second capture.
-          </p>
-        </div>
-
-        <!-- Challenge Instruction Box -->
-        <div class="bg-slate-900/90 rounded-lg p-5 border border-slate-800 space-y-4">
-          <div class="flex items-start space-x-4">
-            <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/40 font-bold font-mono">
-              1
-            </div>
-            <div>
-              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold">PERFORM ACTION</span>
-              <div id="displayAction" class="text-lg font-extrabold text-cyan-300 uppercase tracking-wide">
-                Turn your head LEFT
-              </div>
-              <p class="text-xs text-slate-400 mt-0.5">Perform the action naturally while looking towards camera.</p>
-            </div>
-          </div>
-
-          <div class="border-t border-slate-800/80 pt-3 flex items-start space-x-4">
-            <div class="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/40 font-bold font-mono">
-              2
-            </div>
-            <div>
-              <span class="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-bold">SPEAK PHRASE ALOUD</span>
-              <div id="displayPhrase" class="text-base font-bold font-mono text-emerald-300 bg-slate-950 p-2.5 rounded border border-slate-800 mt-1">
-                "Priya Sharma 2026-09-11 4471"
-              </div>
-              <p class="text-xs text-slate-400 mt-1">Voice anti-spoofing and Whisper ASR will cross-validate the spoken name against document OCR.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Start Button -->
-        <div class="pt-2 flex justify-center">
-          <button id="btnStartCapture" class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm font-mono tracking-wider uppercase transition shadow-lg shadow-cyan-500/20 flex items-center justify-center space-x-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
-            <span>START CAPTURE</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- VIDEO PREVIEW + LIVE SENSORS (STATES 2,3,4) -->
-      <!-- ========================================== -->
-      <div id="captureViewport" class="hidden space-y-4">
-        
-        <!-- Camera Video Box -->
-        <div class="relative w-full aspect-video bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center">
-          <video id="webcamVideo" autoplay playsinline muted class="w-full h-full object-cover video-mirrored"></video>
-          <canvas id="hiddenCanvas" class="hidden"></canvas>
-
-          <!-- Top-left status tag -->
-          <div class="absolute top-3 left-3 z-20 flex items-center space-x-2">
-            <span id="recordingIndicator" class="hidden items-center space-x-1 px-2 py-0.5 rounded bg-red-600/90 text-white font-mono text-[10px] font-bold recording-pulse">
-              <span class="w-2 h-2 rounded-full bg-white"></span>
-              <span>REC 5s</span>
-            </span>
-            <span id="fpsTag" class="px-2 py-0.5 rounded bg-slate-900/80 text-slate-300 font-mono text-[10px] border border-slate-700">
-              480p @ 15fps
-            </span>
-          </div>
-
-          <!-- Live Brightness Gauge Badge in top-right -->
-          <div class="absolute top-3 right-3 z-20 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded border border-slate-700 text-[10px] font-mono flex items-center space-x-2">
-            <span class="text-slate-400">LUX:</span>
-            <span id="luxValueText" class="font-bold text-white">0</span>
-            <div class="w-12 h-2 bg-slate-800 rounded-full overflow-hidden">
-              <div id="luxBarFill" class="h-full bg-emerald-500 transition-all duration-100" style="width: 0%;"></div>
-            </div>
-          </div>
-
-          <!-- BIG COUNTDOWN OVERLAY (During State 4: recording) -->
-          <div id="countdownOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-center pointer-events-none">
-            <div id="countdownNumber" class="text-7xl sm:text-8xl font-black font-mono text-cyan-400 drop-shadow-[0_0_25px_rgba(34,211,238,0.6)]">
-              5
-            </div>
-            <div class="mt-4 text-center px-4">
-              <div class="text-xs uppercase font-mono tracking-widest text-cyan-300 font-semibold mb-1">
-                Say clearly into mic:
-              </div>
-              <div id="overlaySpokenPhrase" class="text-base sm:text-lg font-mono font-bold text-white bg-slate-900/90 px-4 py-1.5 rounded border border-cyan-500/50 shadow-lg">
-                "Priya Sharma 2026-09-11 4471"
-              </div>
-            </div>
-          </div>
-
-          <!-- STATE 3: AMBER LOW BRIGHTNESS WARNING -->
-          <div id="brightnessWarningBox" class="hidden absolute inset-0 z-30 bg-amber-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
-            <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mb-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-              </svg>
-            </div>
-            <h3 class="text-sm font-bold font-mono uppercase text-amber-300">Lighting is too dim</h3>
-            <p class="text-xs text-amber-100/80 max-w-sm mt-1 mb-4">
-              Move to a brighter area or face a light source to ensure accurate facial artifact analysis.
-            </p>
-            <div class="flex items-center space-x-3">
-              <button id="btnBrightnessOverride" class="hidden px-4 py-2 rounded bg-amber-600 hover:bg-amber-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition">
-                Override & Proceed
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Challenge Reminder Strip -->
-        <div class="bg-slate-900/80 p-3 rounded border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">ACTION:</span>
-            <span id="stripAction" class="font-bold text-cyan-300 uppercase">Turn head LEFT</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span class="text-slate-400">SAY:</span>
-            <span id="stripPhrase" class="font-bold text-emerald-300 truncate max-w-[260px]">"Priya Sharma 2026-09-11 4471"</span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ========================================== -->
-      <!-- STATE 5: PROCESSING SPINNER -->
-      <!-- ========================================== -->
-      <div id="stateProcessing" class="hidden py-12 text-center space-y-4">
-        <div class="w-14 h-14 mx-auto rounded-full border-4 border-cyan-500/20 border-t-cyan-400 animate-spin"></div>
-        <div>
-          <h3 class="text-base font-bold font-mono uppercase text-cyan-300 tracking-wide">Analysing signals...</h3>
-          <p class="text-xs text-slate-400 mt-1 font-mono">
-            Extracting face keyframes & audio spectrogram for on-device inference
-          </p>
-        </div>
-        <div id="payloadLogText" class="text-[10px] font-mono text-slate-500">
-          Payload: computing...
-        </div>
-      </div>
-
-      <!-- ========================================== -->
-      <!-- STATE 7: ERROR -->
-      <!-- ========================================== -->
-      <div id="stateError" class="hidden py-8 text-center space-y-4">
-        <div class="w-12 h-12 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center mx-auto">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-sm font-bold font-mono uppercase text-red-400">Verification Interrupted</h3>
-          <p id="errorMessageText" class="text-xs text-slate-300 mt-1 max-w-md mx-auto">
-            Unable to complete biometric capture.
-          </p>
-        </div>
-        <button id="btnTryAgain" class="px-6 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold uppercase transition">
-          TRY AGAIN
-        </button>
-      </div>
-
+  <main>
+    <div id="capture-root">
+      <!-- Mounted by app.js -->
     </div>
-
   </main>
 
-  <footer class="border-t border-slate-800/80 bg-slate-950/60 py-3 px-6 text-center text-xs text-slate-500 font-mono">
-    <span>HackMUJ 4.0 Submission | PS#3 Deepfake & Synthetic Identity Detection</span>
+  <footer>
+    <span>SENTINEL DEFENSE PIPELINE // TIER-3 VERIFICATION</span>
+    <span>ON-DEVICE EDGE CAPTURE</span>
   </footer>
 
-  <!-- Link to app.js -->
-  <script src="app.js"></script>
+  <!-- Capture logic module -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
