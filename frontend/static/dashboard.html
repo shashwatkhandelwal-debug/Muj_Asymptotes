@@ -1154,10 +1154,10 @@
         elaStatusBadge.outerHTML = `<span id="elaStatusBadge">${getSignalBadge(elaSig)}</span>`;
         elaConfidence.innerText = `CONF: ${(Number(elaSig.confidence || 0) * 100).toFixed(0)}%`;
         if (elaExp) elaExp.textContent = elaSig.explanation || "";
-        if (elaSig.evidence && elaSig.evidence.heatmap_path) {
+        if (elaSig.evidence && elaSig.evidence.heatmap_path && (elaSig.evidence.heatmap_path.startsWith('/') || elaSig.evidence.heatmap_path.startsWith('http') || elaSig.evidence.heatmap_path.startsWith('data:'))) {
           elaContainer.innerHTML = `<img src="${elaSig.evidence.heatmap_path}" alt="ELA Heatmap" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.outerHTML='<div class=\\'empty-canvas\\'>NO HEATMAP AVAILABLE</div>';">`;
         } else {
-          elaContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
+          elaContainer.innerHTML = `<div class="empty-canvas">ANALYZED • NO VISUAL HEATMAP</div>`;
         }
       } else {
         elaContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
@@ -1180,12 +1180,12 @@
         if (genaiSig.evidence && genaiSig.evidence.method) {
           genaiMeta.innerText = `method: ${genaiSig.evidence.method}`;
         }
-        if (genaiSig.evidence && genaiSig.evidence.heatmap_path) {
+        if (genaiSig.evidence && genaiSig.evidence.heatmap_path && (genaiSig.evidence.heatmap_path.startsWith('/') || genaiSig.evidence.heatmap_path.startsWith('http') || genaiSig.evidence.heatmap_path.startsWith('data:'))) {
           const path = genaiSig.evidence.heatmap_path;
           const cleanPath = path.startsWith("/static/") ? path.replace("/static/", "") : path;
           genaiContainer.innerHTML = `<img src="${cleanPath}" alt="GenAI Heatmap" style="width: 100%; height: 100%; object-fit: contain;" onerror="if(this.src!=='${path}'){this.src='${path}';}else{this.outerHTML='<div class=\\'empty-canvas\\'>NO HEATMAP AVAILABLE</div>';}">`;
         } else {
-          genaiContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
+          genaiContainer.innerHTML = `<div class="empty-canvas">ANALYZED • NO VISUAL HEATMAP</div>`;
         }
       } else {
         genaiContainer.innerHTML = `<div class="empty-canvas">NO HEATMAP AVAILABLE</div>`;
