@@ -21,7 +21,7 @@
   },
   "audio_noise": {
     "baseline": 0.0,
-    "degraded": 0.0,
-    "delta": 0.0
+    "degraded": 0.5,
+    "delta": 0.5
   }
 }

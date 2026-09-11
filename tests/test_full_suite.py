@@ -81,7 +81,7 @@ def test_signal_result_hard_severity():
 
 def test_hard_signals_set():
     assert SignalId.FACE_DEEPFAKE in HARD_SIGNALS
-    assert SignalId.VOICE_SPOOF in HARD_SIGNALS
+    assert SignalId.VOICE_SPOOF not in HARD_SIGNALS  # demoted to SOFT — insufficient OOS margin
     assert SignalId.GENAI_DOC not in HARD_SIGNALS
 
 
@@ -177,18 +177,20 @@ def test_fusion_soft_signal_no_floor():
     assert "genai_doc" not in result["floors_applied"]
 
 
-def test_fusion_voice_spoof_hard_floor():
+def test_fusion_voice_spoof_soft_signal():
+    """After demotion, voice_spoof contributes weighted penalty but no hard floor."""
     voice_hit = SignalResult(
         signal=SignalId.VOICE_SPOOF,
-        severity=Severity.HARD,
+        severity=Severity.SOFT,
         raw_score=0.9,
         confidence=0.9,
         triggered=True,
     )
     result = fuse(5.0, [voice_hit])
-    assert result["tier"] == "flagged"
-    assert "voice_spoof" in result["floors_applied"]
-    assert result["score"] >= 70.0
+    # SOFT signal: no floor applied, weighted penalty only
+    assert "voice_spoof" not in result["floors_applied"]
+    # Score should reflect weighted contribution, not clamped to 70+
+    assert result["score"] < 70.0
 
 
 # ============================================================================
@@ -440,7 +442,7 @@ def test_antispoof_silent_wav():
     try:
         res = score_voice_spoof(wav_path)
         assert res.signal == SignalId.VOICE_SPOOF
-        assert res.severity == Severity.HARD
+        assert res.severity == Severity.SOFT  # demoted from HARD
         assert 0.0 <= res.raw_score <= 1.0
         assert res.ok is True
         assert res.evidence.get("method") in ("onnx_aasist", "mfcc_heuristic", "fft_fallback")

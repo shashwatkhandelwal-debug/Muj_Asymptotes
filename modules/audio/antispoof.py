@@ -91,7 +91,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
     IN:  audio_path = path to WAV or MP4 audio.
     OUT: SignalResult(
            signal=SignalId.VOICE_SPOOF,
-           severity=Severity.HARD,
+           severity=Severity.SOFT,
            raw_score=P(synthetic voice) in [0,1],
            confidence=apply_calibration(raw_score, "voice_spoof"),
            triggered=(raw_score > SIGNAL_TRIGGER[SignalId.VOICE_SPOOF]),
@@ -108,7 +108,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
         elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.VOICE_SPOOF,
-            severity=Severity.HARD,
+            severity=Severity.SOFT,
             raw_score=0.0,
             confidence=0.0,
             triggered=False,
@@ -123,7 +123,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
         elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.VOICE_SPOOF,
-            severity=Severity.HARD,
+            severity=Severity.SOFT,
             raw_score=0.0,
             confidence=0.0,
             triggered=False,
@@ -155,7 +155,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
             elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
             return SignalResult(
                 signal=SignalId.VOICE_SPOOF,
-                severity=Severity.HARD,
+                severity=Severity.SOFT,
                 raw_score=raw_score,
                 confidence=confidence,
                 triggered=triggered,
@@ -208,18 +208,26 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
         zcr_mean = float(np.mean(np.abs(np.diff(np.sign(y)))) / 2.0) if len(y) > 1 else 0.0
         method = "fft_fallback"
 
-    # Score = sigmoid((-mfcc_delta_var / 10.0) + (spectral_flatness * 5.0))
-    z = (-mfcc_delta_var / 10.0) + (spectral_flatness * 5.0)
+    # Compute genuineness score via sigmoid, with path-aware coefficients.
+    # Librosa MFCCs: fake speech has HIGHER delta variance than real.
+    # FFT fallback:  real speech has HIGHER spectral-diff variance than fake.
+    log_v = float(np.log1p(mfcc_delta_var))
+    if used_librosa:
+        # Librosa: real log_v ≈ 1.8, fake log_v ≈ 2.7; center ≈ 2.1
+        # Higher log_v → more synthetic → z goes negative → low genuineness
+        z = (2.1 - log_v) * 5.0 + (spectral_flatness - 0.003) * 40.0
+    else:
+        # FFT fallback: real log_v ≈ 4-5, fake log_v ≈ 2-3; center ≈ 5.8
+        z = (log_v - 5.8) * 0.8 + (spectral_flatness - 0.010) * 80.0
+
     if z >= 0:
-        score = 1.0 / (1.0 + np.exp(-z))
+        genuineness = 1.0 / (1.0 + np.exp(-z))
     else:
         ez = np.exp(z)
-        score = ez / (1.0 + ez)
+        genuineness = ez / (1.0 + ez)
 
-    # Invert genuineness score into spoof-likelihood P(synthetic voice) in [0, 1]
-    # so raw_score consistently represents spoof likelihood across both training and inference.
-    prob_spoof = 1.0 - score
-    raw_score = float(np.clip(prob_spoof, 0.0, 1.0))
+    # raw_score = P(synthetic voice): invert genuineness
+    raw_score = float(np.clip(1.0 - genuineness, 0.0, 1.0))
     confidence = apply_calibration(raw_score, "voice_spoof")
     triggered = bool(raw_score > SIGNAL_TRIGGER[SignalId.VOICE_SPOOF])
     label = (
@@ -231,7 +239,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
 
     return SignalResult(
         signal=SignalId.VOICE_SPOOF,
-        severity=Severity.HARD,
+        severity=Severity.SOFT,
         raw_score=raw_score,
         confidence=confidence,
         triggered=triggered,
@@ -240,6 +248,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
             "method": method,
             "features": {
                 "mfcc_delta_var": mfcc_delta_var,
+                "log_v": log_v,
                 "spectral_flatness": spectral_flatness,
                 "zcr_mean": zcr_mean,
             },
@@ -262,6 +271,6 @@ if __name__ == "__main__":
 
     res = score_voice_spoof(test_wav)
     assert isinstance(res, SignalResult)
-    assert res.severity == Severity.HARD
+    assert res.severity == Severity.SOFT
     assert 0.0 <= res.raw_score <= 1.0
     print("VOICE ANTISPOOF OK")
