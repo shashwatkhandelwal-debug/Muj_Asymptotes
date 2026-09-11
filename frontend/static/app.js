@@ -46,10 +46,12 @@ async function initMediaPipe() {
   }
 }
 
+const LOW_LIGHT = 60.0;
+
 /**
  * Brightness measurement function (§5.3)
  */
-function checkBrightness(videoElement, canvas, ctx) {
+function meanBrightness(videoElement, canvas, ctx) {
   ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
   const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
   let sum = 0;
@@ -58,6 +60,7 @@ function checkBrightness(videoElement, canvas, ctx) {
   }
   return sum / (data.length / 4); // 0..255
 }
+const checkBrightness = meanBrightness;
 
 /**
  * Hard stop on all media tracks to guarantee camera/mic hardware indicator turns off

@@ -85,9 +85,9 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
     evidence={"error":"mediapipe unavailable"|"no face"}.
     Measure wall time and set result.ms.
     """
-    t0 = time.time()
+    t0 = time.perf_counter()
     if not frames:
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.ACTIVE_LIVENESS,
             raw_score=0.4,
@@ -102,7 +102,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
 
     mesh = _get_facemesh()
     if mesh is None:
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.ACTIVE_LIVENESS,
             raw_score=0.4,
@@ -137,7 +137,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
 
     # Check if no face detected in >50% of frames
     if face_count < (total_frames / 2.0):
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.ACTIVE_LIVENESS,
             raw_score=0.4,
@@ -190,7 +190,7 @@ def score_action(frames: list, expected_action: str) -> SignalResult:
         if not triggered
         else f"Liveness action NOT detected: {expected_action}"
     )
-    elapsed_ms = (time.time() - t0) * 1000.0
+    elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
 
     return SignalResult(
         signal=SignalId.ACTIVE_LIVENESS,

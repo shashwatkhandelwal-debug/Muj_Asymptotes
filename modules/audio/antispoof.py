@@ -103,9 +103,9 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
     raw_score=0.0, confidence=0.0.
     Measure wall time and set result.ms.
     """
-    t0 = time.time()
+    t0 = time.perf_counter()
     if not os.path.exists(audio_path):
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.VOICE_SPOOF,
             severity=Severity.HARD,
@@ -120,7 +120,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
 
     y, sr = _load_audio_signal(audio_path)
     if y is None or len(y) == 0:
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.VOICE_SPOOF,
             severity=Severity.HARD,
@@ -152,7 +152,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
             raw_score = float(np.clip(prob_spoof, 0.0, 1.0))
             confidence = apply_calibration(raw_score, "voice_spoof")
             triggered = bool(raw_score > SIGNAL_TRIGGER[SignalId.VOICE_SPOOF])
-            elapsed_ms = (time.time() - t0) * 1000.0
+            elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
             return SignalResult(
                 signal=SignalId.VOICE_SPOOF,
                 severity=Severity.HARD,
@@ -227,7 +227,7 @@ def score_voice_spoof(audio_path: str) -> SignalResult:
         if triggered
         else "Voice appears genuine"
     )
-    elapsed_ms = (time.time() - t0) * 1000.0
+    elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
 
     return SignalResult(
         signal=SignalId.VOICE_SPOOF,

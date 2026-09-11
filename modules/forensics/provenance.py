@@ -55,7 +55,7 @@ def check_provenance(image_path: str) -> dict:
       provenance_flags: list of strings
       provenance_ms: float
     """
-    t0 = time.time()
+    t0 = time.perf_counter()
     flags = []
     suspicion_score = 0.0
 
@@ -122,7 +122,7 @@ def check_provenance(image_path: str) -> dict:
         flags.append(f"provenance check error: {e}")
         suspicion_score = 0.0
 
-    elapsed = (time.time() - t0) * 1000
+    elapsed = max(0.1, (time.perf_counter() - t0) * 1000)
 
     return {
         "provenance_score": round(suspicion_score, 4),

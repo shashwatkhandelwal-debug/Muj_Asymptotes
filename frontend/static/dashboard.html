@@ -872,8 +872,16 @@
       render(EMBEDDED_SAMPLE);
     }
 
-    function handleDemoClear() {
+    async function handleDemoClear() {
       setLiveIndicator(false);
+      try {
+        const res = await fetch("verify_sample_clear.json");
+        if (res.ok) {
+          const data = await res.json();
+          render(data);
+          return;
+        }
+      } catch (e) {}
       render(CLEAR_SAMPLE);
     }
 
@@ -1254,6 +1262,15 @@
       } catch (e) {
         console.error("Dashboard initial load failed:", e);
       }
+      setInterval(async () => {
+        try {
+          const res = await fetch("/api/verify/last");
+          if (res.ok) {
+            const d = await res.json();
+            if (!d.error) render(d);
+          }
+        } catch (e) {}
+      }, 5000);
     });
   </script>
 </body>

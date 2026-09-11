@@ -65,12 +65,12 @@ def score_name_match(audio_path: str, ocr_name: str,
          )
     Measure wall time and set result.ms.
     """
-    t0 = time.time()
+    t0 = time.perf_counter()
     transcript = ""
     error_msg = None
 
     if not os.path.exists(audio_path):
-        elapsed_ms = (time.time() - t0) * 1000.0
+        elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
         return SignalResult(
             signal=SignalId.NAME_MATCH,
             raw_score=1.0,
@@ -136,7 +136,7 @@ def score_name_match(audio_path: str, ocr_name: str,
         if not triggered
         else "MISMATCH: spoken name does not match document"
     )
-    elapsed_ms = (time.time() - t0) * 1000.0
+    elapsed_ms = max(0.1, (time.perf_counter() - t0) * 1000.0)
 
     evidence = {
         "transcript": transcript,
