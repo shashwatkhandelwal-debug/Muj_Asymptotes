@@ -4,7 +4,6 @@ python-multipart>=0.0.9
 pydantic>=2.0.0
 cryptography>=42.0.0
 pyzbar>=0.1.9
-zxingcpp>=2.2.0
 python-Levenshtein>=0.25.0
 rapidfuzz>=3.6.0
 easyocr>=1.7.0
