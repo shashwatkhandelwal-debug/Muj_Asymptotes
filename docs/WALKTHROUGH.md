@@ -1,7 +1,7 @@
 # Project Status Walkthrough
 
 ## Completed Steps
-1. **Environment Verification:** All original SIH-VAJRA core tests and HackMUJ detectors are functioning perfectly on their heuristic fallbacks.
+1. **Environment Verification:** All original core tests and HackMUJ detectors are functioning perfectly on their heuristic fallbacks.
 2. **Setup:** `models/` and `notebooks/` directories have been initialized with appropriate `.gitignore` tracking.
 3. **Synthetic Voices:** 15 synthetic TTS voices have been generated and converted to 16kHz mono WAV format in `data/synthetic_voices/`.
 4. **Demo Machine Test:** The HuggingFace `deepfake_detector` pipeline works on the demo machine, eliminating the need for complex ONNX exports.
