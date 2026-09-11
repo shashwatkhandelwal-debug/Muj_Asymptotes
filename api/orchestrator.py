@@ -26,6 +26,8 @@ from shared.contracts import SignalResult, SignalId, SIGNAL_TRIGGER
 from shared.audit_chain import append_entry
 from shared.preprocessing import clahe_rgb, mean_brightness, LOW_LIGHT_THRESHOLD
 from modules.forensics.genai_detector import detect_genai_document
+from modules.forensics.ela import score_document_ela
+from modules.forensics.exif import score_document_exif
 from modules.face.deepfake_detector import detect_face_deepfake
 from modules.face.challenge import issue_challenge, run_challenge, _decode_frames
 from modules.decision.fusion import fuse
@@ -58,10 +60,12 @@ MODEL_PROVENANCE = {
                      "samples": "cross-modal checked against OCR name"},
     "watchlist":    {"primary": "Exact hash match against sanctions list",
                      "fallback": "N/A", "calibration": "threshold", "samples": "N/A"},
-    "ela":         {"primary": "PIL EXIF tag inspection",
-                     "fallback": "N/A", "calibration": "rule-based", "samples": "N/A"},
-    "exif":         {"primary": "PIL EXIF tag inspection",
-                     "fallback": "N/A", "calibration": "rule-based", "samples": "N/A"},
+    "ela":         {"primary": "JPEG DCT Error Level Analysis",
+                    "fallback": "Full document variance",
+                    "calibration": "Adaptive threshold",
+                    "samples": "N/A — rule-based DCT recompression error"},
+    "exif":        {"primary": "PIL EXIF tag inspection",
+                    "fallback": "N/A", "calibration": "rule-based", "samples": "N/A"},
 }
 
 
@@ -74,6 +78,12 @@ _executor = ThreadPoolExecutor(max_workers=4)
 # Pepper lives in memory only. Loaded at startup from officer shares or env.
 _PEPPER: bytes | None = None
 _LAST_RESULT: dict = {}
+_LAST_DOC_RESULTS: dict = {
+    "signals": [],
+    "ocr_name": "Priya Sharma",
+    "existing_result": {},
+    "existing_score": 0.0,
+}
 
 def run_existing_pipeline(doc_path: str) -> dict:
     """
@@ -284,14 +294,16 @@ async def verify(document_image: UploadFile = File(...),
     frames = [clahe_rgb(f) for f in raw_frames]
     is_low_light = any(mean_brightness(f) < LOW_LIGHT_THRESHOLD for f in frames) if frames else False
 
-    # 5. Fire A, B, C in PARALLEL
+    # 5. Fire A, B, C, D (ELA/EXIF) in PARALLEL
     genai_task     = loop.run_in_executor(_executor, detect_genai_document, doc_path)
     deepfake_task  = loop.run_in_executor(_executor, detect_face_deepfake, frames)
+    ela_task       = loop.run_in_executor(_executor, score_document_ela, doc_path)
+    exif_task      = loop.run_in_executor(_executor, score_document_exif, doc_path)
     challenge_task = loop.run_in_executor(
         _executor, run_challenge, video_path, audio_path, ch, ocr_name)
 
-    genai_res, deepfake_res, challenge_results = await asyncio.gather(
-        genai_task, deepfake_task, challenge_task)
+    genai_res, deepfake_res, ela_res, exif_res, challenge_results = await asyncio.gather(
+        genai_task, deepfake_task, ela_task, exif_task, challenge_task)
 
     if is_low_light and hasattr(deepfake_res, "evidence") and isinstance(deepfake_res.evidence, dict):
         deepfake_res.evidence["low_light_warning"] = True
@@ -319,8 +331,14 @@ async def verify(document_image: UploadFile = File(...),
             asr_result.triggered = (
                 asr_result.raw_score > SIGNAL_TRIGGER[SignalId.NAME_MATCH])
 
+    # Cache Step 1 document signals for subsequent Step 2 challenge fusion
+    _LAST_DOC_RESULTS["signals"] = [genai_res, ela_res, exif_res]
+    _LAST_DOC_RESULTS["ocr_name"] = ocr_name
+    _LAST_DOC_RESULTS["existing_result"] = existing_result
+    _LAST_DOC_RESULTS["existing_score"] = existing_score
+
     # 6. Fuse everything
-    all_new = [genai_res, deepfake_res] + challenge_results
+    all_new = [genai_res, deepfake_res, ela_res, exif_res] + challenge_results
     fused = fuse(existing_score, all_new)
 
     # Surface watchlist result from existing pipeline
@@ -482,7 +500,18 @@ async def handle_challenge(request: Request):
             asr_result.triggered = (
                 asr_result.raw_score > SIGNAL_TRIGGER[SignalId.NAME_MATCH])
 
-    fused = fuse(10.0, [deepfake_res] + challenge_results)
+    # Merge cached Step 1 document signals (genai_doc, ela, exif) with Step 2 biometric signals
+    doc_signals = _LAST_DOC_RESULTS.get("signals", [])
+    existing_score = _LAST_DOC_RESULTS.get("existing_score", 0.0) if doc_signals else 10.0
+
+    if doc_signals:
+        genai_doc_sig = [s for s in doc_signals if s.signal == SignalId.GENAI_DOC]
+        forensics_sigs = [s for s in doc_signals if s.signal in (SignalId.ELA, SignalId.EXIF)]
+        all_signals = genai_doc_sig + [deepfake_res] + forensics_sigs + challenge_results
+    else:
+        all_signals = [deepfake_res] + challenge_results
+
+    fused = fuse(existing_score, all_signals)
 
     # Watchlist line
     watchlist_line = {
@@ -512,9 +541,15 @@ async def handle_challenge(request: Request):
             "samples":     prov.get("samples", "unknown"),
         }
 
+    existing_breakdown = _LAST_DOC_RESULTS.get("existing_result", {}).get("breakdown") or {
+        "ocr": "clean",
+        "signature": "valid",
+        "ela": "clear"
+    }
+
     response = {
         "ok": True,
-        "existing": {"ocr": "clean", "signature": "valid", "ela": "clear"},
+        "existing": existing_breakdown,
         "lines": fused["lines"],
         "final": {
             "score": fused["score"],
@@ -540,7 +575,11 @@ if _static_dir.exists():
 
     @app.get("/")
     def index():
-        return RedirectResponse(url="/dashboard.html")
+        return RedirectResponse(url="/upload.html")
+
+    @app.get("/upload.html")
+    def upload_page():
+        return FileResponse(str(_static_dir / "upload.html"))
 
     @app.get("/dashboard.html")
     def dashboard_page():

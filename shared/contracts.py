@@ -47,6 +47,8 @@ SIGNAL_WEIGHTS: dict[SignalId, float] = {
     SignalId.VOICE_SPOOF:     20.0,
     SignalId.NAME_MATCH:      15.0,
     SignalId.ACTIVE_LIVENESS: 15.0,
+    SignalId.ELA:             15.0,
+    SignalId.EXIF:            10.0,
 }
 
 SIGNAL_TRIGGER: dict[SignalId, float] = {
@@ -55,6 +57,8 @@ SIGNAL_TRIGGER: dict[SignalId, float] = {
     SignalId.VOICE_SPOOF:     0.55,
     SignalId.NAME_MATCH:      0.50,
     SignalId.ACTIVE_LIVENESS: 0.50,
+    SignalId.ELA:             0.50,
+    SignalId.EXIF:            0.50,
 }
 
 HARD_SIGNALS: set[SignalId] = {

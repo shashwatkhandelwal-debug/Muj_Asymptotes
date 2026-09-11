@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SENTINEL // Step 1: Document Forensics Upload</title>
+
+  <!-- Typography with offline-safe system fallback stacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Canvas — matte obsidian, tonally layered, never flat */
+      --bg-void:         #070a0e;
+      --bg-panel:        #0c1017;
+      --bg-panel-raised: #121620;
+      --bg-inset:        #060810;
+
+      /* Borders */
+      --border-hairline: rgba(255,255,255,0.07);
+      --border-strong:   rgba(255,255,255,0.16);
+
+      /* Text */
+      --text-primary:    #e8eaee;
+      --text-secondary:  #9aa0ac;
+      --text-tertiary:   #5b6270;
+
+      /* Neutral tech accent */
+      --accent-blue:     #38bdf8;
+      --accent-teal:     #2dd4bf;
+      --accent-dim:      rgba(56,189,248,0.12);
+
+      /* Semantic */
+      --clear:           #10b981;
+      --clear-dim:       rgba(16,185,129,0.12);
+      --review:          #f59e0b;
+      --review-dim:      rgba(245,158,11,0.12);
+      --flagged:         #ef4444;
+      --flagged-dim:     rgba(239,68,68,0.14);
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 900px 500px at 12% -8%, rgba(56,189,248,0.06), transparent 60%),
+        radial-gradient(ellipse 700px 400px at 88% 108%, rgba(45,212,191,0.04), transparent 60%),
+        var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-feature-settings: "tnum" 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Top Navigation Header */
+    header {
+      height: 56px;
+      background: var(--bg-void);
+      border-bottom: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: all 140ms ease;
+    }
+    .nav-btn:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+      background: var(--bg-panel-raised);
+    }
+    .nav-btn.active {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      background: var(--accent-dim);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-teal);
+      animation: pulse 2.4s ease-in-out infinite;
+      display: inline-block;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1080px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Stepper Bar */
+    .stepper-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 12px 20px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+    .step-item.active {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+    .step-item.completed {
+      color: var(--clear);
+    }
+
+    .step-number {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-hairline);
+    }
+    .step-item.active .step-number {
+      background: var(--accent-dim);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    .step-item.completed .step-number {
+      background: var(--clear-dim);
+      border-color: var(--clear);
+      color: var(--clear);
+    }
+
+    .step-divider {
+      flex: 1;
+      height: 1px;
+      background: var(--border-hairline);
+      margin: 0 16px;
+    }
+
+    /* Panels & Cards */
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 22px 24px;
+      position: relative;
+      transition: border-color 160ms ease;
+    }
+    .panel::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 16px;
+      right: 16px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      pointer-events: none;
+    }
+    .panel:hover {
+      border-color: var(--border-strong);
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed rgba(255,255,255,0.12);
+      border-radius: 8px;
+      background: var(--bg-inset);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 160ms ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent-blue);
+      background: rgba(56,189,248,0.03);
+    }
+
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 12px;
+      border-radius: 50%;
+      background: var(--bg-panel-raised);
+      border: 1px solid var(--border-hairline);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-blue);
+    }
+
+    .file-input-hidden {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* Image Preview */
+    .preview-container {
+      display: none;
+      margin-top: 18px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-hairline);
+      border-radius: 6px;
+      padding: 14px;
+      position: relative;
+    }
+
+    .preview-wrapper {
+      max-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 4px;
+      background: #000;
+    }
+
+    .preview-img {
+      max-height: 280px;
+      max-width: 100%;
+      object-fit: contain;
+    }
+
+    .preview-meta {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      color: #04121e;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 140ms ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 16px -4px rgba(56,189,248,0.4);
+    }
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+      transform: none;
+    }
+
+    .btn-continue {
+      background: linear-gradient(180deg, #10b981, #059669);
+      color: #022014;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 140ms ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 0 20px -4px rgba(16,185,129,0.5);
+    }
+    .btn-continue:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(4,18,30,0.3);
+      border-top-color: #04121e;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Results Grid */
+    .results-container {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeIn 300ms ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 860px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .signal-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hairline);
+      border-radius: 8px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .signal-card.triggered {
+      border-color: rgba(239,68,68,0.4);
+      background: linear-gradient(180deg, rgba(239,68,68,0.04), var(--bg-panel));
+    }
+    .signal-card.clear {
+      border-color: rgba(16,185,129,0.3);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+    .badge-clear {
+      background: var(--clear-dim);
+      color: var(--clear);
+      border: 1px solid rgba(16,185,129,0.28);
+    }
+    .badge-flagged {
+      background: var(--flagged-dim);
+      color: var(--flagged);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+
+    .gauge-track {
+      width: 100%;
+      height: 6px;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-hairline);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 10px 0 6px;
+    }
+    .gauge-fill {
+      height: 100%;
+      transition: width 400ms ease;
+    }
+    .gauge-fill.clear {
+      background: var(--clear);
+    }
+    .gauge-fill.flagged {
+      background: var(--flagged);
+    }
+
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .card-explanation {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      background: var(--bg-inset);
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border-hairline);
+      margin-top: 10px;
+    }
+
+    .evidence-list {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+    .evidence-tag {
+      background: var(--bg-panel-raised);
+      border: 1px solid var(--border-hairline);
+      padding: 3px 8px;
+      border-radius: 3px;
+      color: var(--text-secondary);
+    }
+    .evidence-tag.flag {
+      color: var(--flagged);
+      border-color: rgba(239,68,68,0.25);
+      background: var(--flagged-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="header-left">
+      <span class="status-dot"></span>
+      <div class="header-title">
+        <span>SENTINEL</span>
+        <span style="color: var(--text-tertiary);">//</span>
+        <span class="eyebrow" style="color: var(--accent-blue);">STEP 1: DOCUMENT FORENSICS</span>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a href="/upload.html" class="nav-btn active">1. Document Upload</a>
+      <a href="/capture.html" class="nav-btn">2. Biometrics</a>
+      <a href="/dashboard.html" class="nav-btn">3. Officer Dashboard</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Stepper Navigation -->
+    <div class="stepper-bar">
+      <div class="step-item active">
+        <div class="step-number">1</div>
+        <span>Upload ID Document</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item">
+        <div class="step-number">2</div>
+        <span>Live Challenge & Capture</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-item">
+        <div class="step-number">3</div>
+        <span>Forensic Audit</span>
+      </div>
+    </div>
+
+    <!-- Document Upload Card -->
+    <section class="panel">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+        <div>
+          <div class="eyebrow">IDENTITY VERIFICATION ENTRYPOINT</div>
+          <h2 style="font-size: 16px; font-weight: 700; margin-top: 4px;">Upload Identification Document</h2>
+          <p style="color: var(--text-secondary); font-size: 12px; margin-top: 2px;">
+            Aadhaar, Passport, PAN, or National ID. Analyzed across GenAI synthesis, JPEG DCT compression anomalies (ELA), and EXIF metadata tampering.
+          </p>
+        </div>
+        <span class="badge" style="background: var(--bg-panel-raised); border: 1px solid var(--border-hairline); color: var(--text-secondary);">
+          MODALITY: DOC_IMAGE
+        </span>
+      </div>
+
+      <!-- Drop Zone -->
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="docFileInput" class="file-input-hidden" accept="image/*" />
+        <div class="upload-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Drag and drop ID document photo here</div>
+        <div class="eyebrow">or click to browse files (JPEG, PNG, WebP)</div>
+      </div>
+
+      <!-- Image Preview Section -->
+      <div class="preview-container" id="previewContainer">
+        <div class="preview-wrapper">
+          <img id="previewImg" class="preview-img" src="" alt="Document Preview" />
+        </div>
+        <div class="preview-meta">
+          <span id="previewFilename">filename.jpg</span>
+          <span id="previewFilesize">0 KB</span>
+        </div>
+      </div>
+
+      <!-- Submit Action Bar -->
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; align-items: center; gap: 12px;">
+        <span id="uploadStatusText" class="mono" style="font-size: 11px; color: var(--text-tertiary);">No document selected</span>
+        <button id="verifyDocBtn" class="btn-primary" disabled>
+          <span id="btnSpinner" class="spinner" style="display: none;"></span>
+          <span id="btnLabel">Upload & Verify Document</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Inline Forensic Results Section -->
+    <section class="results-container" id="resultsContainer">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="eyebrow" style="color: var(--accent-blue);">STEP 1 FORENSIC ANALYSIS SUMMARY</div>
+        <span id="overallDocStatus" class="badge badge-clear">DOCUMENT VERIFIED</span>
+      </div>
+
+      <!-- 3-Card Forensic Breakdown -->
+      <div class="cards-grid">
+        <!-- 1. GenAI Document Card -->
+        <div class="signal-card" id="cardGenAI">
+          <div>
+            <div class="card-header">
+              <span class="card-title">GenAI Synthesis</span>
+              <span class="badge" id="badgeGenAI">CLEAR</span>
+            </div>
+            <div class="card-meta-row">
+              <span>AI Probability:</span>
+              <span class="mono" id="scoreGenAI">0%</span>
+            </div>
+            <div class="gauge-track">
+              <div class="gauge-fill clear" id="gaugeGenAI" style="width: 0%;"></div>
+            </div>
+            <div class="card-meta-row" style="margin-top: 8px;">
+              <span>Penalty Points:</span>
+              <span class="mono font-bold" id="penGenAI">+0.0</span>
+            </div>
+          </div>
+          <div>
+            <div class="card-explanation" id="explainGenAI">Spectrum consistent with camera-captured document.</div>
+            <div class="evidence-list" id="evidenceGenAI"></div>
+          </div>
+        </div>
+
+        <!-- 2. ELA Card -->
+        <div class="signal-card" id="cardELA">
+          <div>
+            <div class="card-header">
+              <span class="card-title">Error Level Analysis (ELA)</span>
+              <span class="badge" id="badgeELA">CLEAR</span>
+            </div>
+            <div class="card-meta-row">
+              <span>Tamper Likelihood:</span>
+              <span class="mono" id="scoreELA">0%</span>
+            </div>
+            <div class="gauge-track">
+              <div class="gauge-fill clear" id="gaugeELA" style="width: 0%;"></div>
+            </div>
+            <div class="card-meta-row" style="margin-top: 8px;">
+              <span>Penalty Points:</span>
+              <span class="mono font-bold" id="penELA">+0.0</span>
+            </div>
+          </div>
+          <div>
+            <div class="card-explanation" id="explainELA">No JPEG recompression anomalies detected.</div>
+            <div class="evidence-list" id="evidenceELA"></div>
+          </div>
+        </div>
+
+        <!-- 3. EXIF Metadata Card -->
+        <div class="signal-card" id="cardEXIF">
+          <div>
+            <div class="card-header">
+              <span class="card-title">EXIF Metadata</span>
+              <span class="badge" id="badgeEXIF">CLEAR</span>
+            </div>
+            <div class="card-meta-row">
+              <span>Metadata Risk:</span>
+              <span class="mono" id="scoreEXIF">0%</span>
+            </div>
+            <div class="gauge-track">
+              <div class="gauge-fill clear" id="gaugeEXIF" style="width: 0%;"></div>
+            </div>
+            <div class="card-meta-row" style="margin-top: 8px;">
+              <span>Penalty Points:</span>
+              <span class="mono font-bold" id="penEXIF">+0.0</span>
+            </div>
+          </div>
+          <div>
+            <div class="card-explanation" id="explainEXIF">Camera sensor metadata present and consistent.</div>
+            <div class="evidence-list" id="evidenceEXIF"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action: Continue to Biometric Step 2 -->
+      <div class="panel" style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-panel-raised);">
+        <div>
+          <div style="font-weight: 700; font-size: 13px;">Document Analysis Complete</div>
+          <div style="color: var(--text-secondary); font-size: 12px; margin-top: 2px;">
+            Proceed to Step 2 to complete video facial liveness, vocal ASR challenge, and multimodal fusion.
+          </div>
+        </div>
+        <a href="/capture.html" id="continueToCaptureBtn" class="btn-continue">
+          <span>Continue to Biometric Verification</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // State
+    let selectedFile = null;
+
+    // DOM Elements
+    const fileInput = document.getElementById("docFileInput");
+    const uploadZone = document.getElementById("uploadZone");
+    const previewContainer = document.getElementById("previewContainer");
+    const previewImg = document.getElementById("previewImg");
+    const previewFilename = document.getElementById("previewFilename");
+    const previewFilesize = document.getElementById("previewFilesize");
+    const uploadStatusText = document.getElementById("uploadStatusText");
+    const verifyDocBtn = document.getElementById("verifyDocBtn");
+    const btnSpinner = document.getElementById("btnSpinner");
+    const btnLabel = document.getElementById("btnLabel");
+    const resultsContainer = document.getElementById("resultsContainer");
+
+    // File Selection Handlers
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    // Drag & Drop
+    ["dragenter", "dragover"].forEach(evt => {
+      uploadZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadZone.classList.add("dragover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(evt => {
+      uploadZone.addEventListener(evt, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadZone.classList.remove("dragover");
+      });
+    });
+
+    uploadZone.addEventListener("drop", (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please select a valid image file (JPEG/PNG/WebP).");
+        return;
+      }
+      selectedFile = file;
+
+      // Update Preview
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        previewImg.src = ev.target.result;
+        previewContainer.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+
+      // Meta info
+      previewFilename.textContent = file.name;
+      previewFilesize.textContent = (file.size / 1024).toFixed(1) + " KB";
+      uploadStatusText.textContent = "Ready for forensic scan";
+      verifyDocBtn.disabled = false;
+    }
+
+    // Submit Verification Call
+    verifyDocBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      // Loading state
+      verifyDocBtn.disabled = true;
+      btnSpinner.style.display = "inline-block";
+      btnLabel.textContent = "Analyzing Document Forensics...";
+      uploadStatusText.textContent = "Running GenAI, ELA & EXIF pipelines...";
+
+      const formData = new FormData();
+      // Field name EXACTLY matching orchestrator.py: document_image
+      formData.append("document_image", selectedFile, selectedFile.name);
+
+      try {
+        const response = await fetch("/api/verify", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server returned HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderStep1Results(data);
+        uploadStatusText.textContent = "Scan complete";
+      } catch (err) {
+        console.error("Verification failed:", err);
+        uploadStatusText.textContent = "Analysis error: " + err.message;
+        alert("Failed to analyze document: " + err.message);
+      } finally {
+        verifyDocBtn.disabled = false;
+        btnSpinner.style.display = "none";
+        btnLabel.textContent = "Re-analyze Document";
+      }
+    });
+
+    function renderStep1Results(data) {
+      resultsContainer.style.display = "flex";
+      resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      const lines = data.lines || [];
+      const genai = lines.find(l => l.signal === "genai_doc") || {};
+      const ela   = lines.find(l => l.signal === "ela") || {};
+      const exif  = lines.find(l => l.signal === "exif") || {};
+
+      // Render GenAI Card
+      renderCard("GenAI", genai, "AI Probability");
+      // Render ELA Card
+      renderCard("ELA", ela, "Tamper Likelihood");
+      // Render EXIF Card
+      renderCard("EXIF", exif, "Metadata Risk");
+
+      // Overall Step 1 Status Badge
+      const anyTriggered = (genai.triggered || ela.triggered || exif.triggered);
+      const overallBadge = document.getElementById("overallDocStatus");
+      if (anyTriggered) {
+        overallBadge.className = "badge badge-flagged";
+        overallBadge.textContent = "ANOMALIES FLAGGED";
+      } else {
+        overallBadge.className = "badge badge-clear";
+        overallBadge.textContent = "DOCUMENT VERIFIED";
+      }
+    }
+
+    function renderCard(prefix, sig, metricName) {
+      const card       = document.getElementById(`card${prefix}`);
+      const badge      = document.getElementById(`badge${prefix}`);
+      const scoreEl    = document.getElementById(`score${prefix}`);
+      const gaugeEl    = document.getElementById(`gauge${prefix}`);
+      const penEl      = document.getElementById(`pen${prefix}`);
+      const explainEl  = document.getElementById(`explain${prefix}`);
+      const evidenceEl = document.getElementById(`evidence${prefix}`);
+
+      const triggered  = Boolean(sig.triggered);
+      const conf       = Number(sig.confidence || 0);
+      const penalty    = Number(sig.penalty || 0);
+      const pct        = Math.round(conf * 100);
+
+      // Card boundary class
+      card.className = "signal-card " + (triggered ? "triggered" : "clear");
+
+      // Status Badge
+      badge.className = "badge " + (triggered ? "badge-flagged" : "badge-clear");
+      badge.textContent = triggered ? "TRIGGERED" : "PASS";
+
+      // Score & Gauge
+      scoreEl.textContent = `${pct}%`;
+      gaugeEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+      gaugeEl.className = "gauge-fill " + (triggered ? "flagged" : "clear");
+
+      // Penalty
+      penEl.textContent = `+${penalty.toFixed(1)}`;
+      penEl.style.color = penalty > 0 ? "var(--flagged)" : "var(--text-secondary)";
+
+      // Explanation
+      explainEl.textContent = sig.explanation || sig.label || "Analysis complete.";
+
+      // Evidence Tags
+      evidenceEl.innerHTML = "";
+      const ev = sig.evidence || {};
+      if (prefix === "GenAI") {
+        if (ev.method) evidenceEl.innerHTML += `<div class="evidence-tag">Method: ${ev.method}</div>`;
+        if (ev.hf_ratio !== undefined) evidenceEl.innerHTML += `<div class="evidence-tag">HF Ratio: ${Number(ev.hf_ratio).toFixed(4)}</div>`;
+        if (ev.provenance_flags && ev.provenance_flags.length > 0) {
+          ev.provenance_flags.forEach(f => {
+            evidenceEl.innerHTML += `<div class="evidence-tag flag">⚠ ${f}</div>`;
+          });
+        }
+      } else if (prefix === "ELA") {
+        if (ev.max_patch_variance !== undefined && ev.threshold !== undefined) {
+          evidenceEl.innerHTML += `<div class="evidence-tag ${ev.max_patch_variance > ev.threshold ? 'flag' : ''}">Max Patch Var: ${Number(ev.max_patch_variance).toFixed(2)} (Thresh: ${ev.threshold})</div>`;
+        }
+        if (ev.mean_variance !== undefined) {
+          evidenceEl.innerHTML += `<div class="evidence-tag">Mean Variance: ${Number(ev.mean_variance).toFixed(2)}</div>`;
+        }
+      } else if (prefix === "EXIF") {
+        if (ev.software) {
+          evidenceEl.innerHTML += `<div class="evidence-tag flag">Tool: ${ev.software}</div>`;
+        }
+        if (ev.flags && ev.flags.length > 0) {
+          ev.flags.forEach(f => {
+            evidenceEl.innerHTML += `<div class="evidence-tag flag">⚠ ${f}</div>`;
+          });
+        } else {
+          evidenceEl.innerHTML += `<div class="evidence-tag">Sensor Tags: Consistent</div>`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

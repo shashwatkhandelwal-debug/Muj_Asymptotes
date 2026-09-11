@@ -27,6 +27,8 @@ from shared.audit_chain import chain_hash, append_entry, verify_chain
 from shared.pepper_sss import generate_pepper, split_pepper, reconstruct_pepper
 from modules.decision.calibration import fit_calibrator, apply_calibration
 from modules.forensics.genai_detector import detect_genai_document
+from modules.forensics.ela import score_document_ela
+from modules.forensics.exif import score_document_exif
 from modules.face.deepfake_detector import detect_face_deepfake
 from modules.face.active_liveness import score_action
 from modules.audio.asr import score_name_match
@@ -428,6 +430,38 @@ def test_deepfake_detector_random_frames():
     assert res.severity == Severity.HARD
     assert 0.0 <= res.raw_score <= 1.0
     assert len(res.evidence.get("per_frame_scores", [])) <= 15
+
+
+def test_ela_detector_returns_signal_result():
+    arr = np.random.randint(100, 200, (200, 300, 3), dtype=np.uint8)
+    tmp_dir = os.environ.get("TEMP", tempfile.gettempdir())
+    img_path = os.path.join(tmp_dir, f"test_ela_{os.getpid()}.jpg")
+    Image.fromarray(arr).save(img_path)
+    try:
+        res = score_document_ela(img_path)
+        assert res.signal == SignalId.ELA
+        assert res.severity == Severity.SOFT
+        assert 0.0 <= res.raw_score <= 1.0
+        assert res.ok is True
+    finally:
+        if os.path.exists(img_path):
+            os.unlink(img_path)
+
+
+def test_exif_detector_returns_signal_result():
+    arr = np.random.randint(100, 200, (100, 100, 3), dtype=np.uint8)
+    tmp_dir = os.environ.get("TEMP", tempfile.gettempdir())
+    img_path = os.path.join(tmp_dir, f"test_exif_{os.getpid()}.jpg")
+    Image.fromarray(arr).save(img_path)
+    try:
+        res = score_document_exif(img_path)
+        assert res.signal == SignalId.EXIF
+        assert res.severity == Severity.SOFT
+        assert 0.0 <= res.raw_score <= 1.0
+        assert res.ok is True
+    finally:
+        if os.path.exists(img_path):
+            os.unlink(img_path)
 
 
 def test_antispoof_silent_wav():
