@@ -1461,6 +1461,12 @@
     // STAGE 2 LOGIC: Facial Liveness Video Capture
     // -----------------------------------------------------------
     async function setupStage2Camera() {
+      const btnFace = document.getElementById("btnStartFaceCapture");
+      if (btnFace) {
+        btnFace.disabled = false;
+        btnFace.innerHTML = "<span>[START FACIAL CAPTURE]</span>";
+      }
+
       try {
         // Fetch fresh challenge
         try {
@@ -1473,14 +1479,20 @@
           }
         } catch (_) {}
 
-        document.getElementById("spokenPhraseDisplay").innerText = `"${activeChallenge.spoken_phrase}"`;
-        document.getElementById("challengeNonce").innerText = activeChallenge.nonce;
+        const phraseEl = document.getElementById("spokenPhraseDisplay");
+        if (phraseEl) phraseEl.innerText = `"${activeChallenge.spoken_phrase}"`;
+        const nonceEl = document.getElementById("challengeNonce");
+        if (nonceEl) nonceEl.innerText = activeChallenge.nonce;
+
         const actionLabels = {
           "turn_left": "Turn your head LEFT",
           "turn_right": "Turn your head RIGHT",
           "blink_twice": "Blink your eyes TWICE"
         };
-        document.getElementById("faceActionPrompt").innerText = `Action: ${actionLabels[activeChallenge.action] || activeChallenge.action.toUpperCase()}`;
+        const promptEl = document.getElementById("faceActionPrompt");
+        if (promptEl) {
+          promptEl.innerText = `Action: ${actionLabels[activeChallenge.action] || activeChallenge.action.toUpperCase()}`;
+        }
 
         if (!mediaStream) {
           try {
@@ -1504,7 +1516,7 @@
         const video = document.getElementById("captureVideo");
         if (video && mediaStream) {
           video.srcObject = mediaStream;
-          await video.play();
+          await video.play().catch(() => {});
           pollLux(video);
         }
       } catch (err) {
@@ -1515,33 +1527,43 @@
 
     function pollLux(video) {
       const canvas = document.getElementById("calcCanvas");
+      if (!canvas) return;
       const ctx = canvas.getContext("2d");
       const interval = setInterval(() => {
         if (!mediaStream || currentStage !== 2) {
           clearInterval(interval);
           return;
         }
-        canvas.width = 160; canvas.height = 90;
-        ctx.drawImage(video, 0, 0, 160, 90);
-        const data = ctx.getImageData(0, 0, 160, 90).data;
-        let sum = 0;
-        for (let i = 0; i < data.length; i += 4) {
-          sum += (data[i] + data[i+1] + data[i+2]) / 3;
-        }
-        const lux = Math.round(sum / (data.length / 4));
-        document.getElementById("luxReadout").innerText = `${lux} LUX`;
-        document.getElementById("lightWarning").style.display = lux < 50 ? "inline-flex" : "none";
+        try {
+          canvas.width = 160; canvas.height = 90;
+          ctx.drawImage(video, 0, 0, 160, 90);
+          const data = ctx.getImageData(0, 0, 160, 90).data;
+          let sum = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            sum += (data[i] + data[i+1] + data[i+2]) / 3;
+          }
+          const lux = Math.round(sum / (data.length / 4));
+          const luxEl = document.getElementById("luxReadout");
+          if (luxEl) luxEl.innerText = `${lux} LUX`;
+          const warnEl = document.getElementById("lightWarning");
+          if (warnEl) warnEl.style.display = lux < 50 ? "inline-flex" : "none";
+        } catch (_) {}
       }, 300);
     }
 
     async function startFaceCaptureWorkflow() {
-      document.getElementById("btnStartFaceCapture").disabled = true;
+      const btn = document.getElementById("btnStartFaceCapture");
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = "<span>RECORDING (3s)...</span>";
+      }
       capturedFrames = [];
 
       const overlay = document.getElementById("stage2CountdownOverlay");
-      overlay.style.display = "flex";
+      if (overlay) overlay.style.display = "flex";
       let count = 3;
-      document.getElementById("countdownNumber").innerText = count;
+      const countEl = document.getElementById("countdownNumber");
+      if (countEl) countEl.innerText = count;
 
       const video = document.getElementById("captureVideo");
       const canvas = document.createElement("canvas");
@@ -1553,20 +1575,22 @@
       times.forEach((t) => {
         setTimeout(() => {
           try {
-            ctx.drawImage(video, 0, 0, 224, 224);
-            canvas.toBlob((blob) => {
-              if (blob && capturedFrames.length < 5) capturedFrames.push(blob);
-            }, "image/jpeg", 0.85);
+            if (video && video.videoWidth > 0) {
+              ctx.drawImage(video, 0, 0, 224, 224);
+              canvas.toBlob((blob) => {
+                if (blob && capturedFrames.length < 5) capturedFrames.push(blob);
+              }, "image/jpeg", 0.85);
+            }
           } catch (_) {}
         }, t);
       });
 
       const interval = setInterval(() => {
         count -= 1;
-        document.getElementById("countdownNumber").innerText = count;
+        if (countEl) countEl.innerText = count;
         if (count <= 0) {
           clearInterval(interval);
-          overlay.style.display = "none";
+          if (overlay) overlay.style.display = "none";
           // Auto advance to Stage 3 for audio pass-phrase
           advanceToStage(3);
         }
